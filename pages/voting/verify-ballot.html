@@ -1,0 +1,380 @@
+<!doctype html>
+
+<html class="light" lang="vi">
+  <head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>Xác nhận Bỏ phiếu | Blockchain Voting</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+      rel="stylesheet"
+    />
+
+    <link rel="stylesheet" href="../../CSS/verify-ballot.css" />
+  </head>
+  <body class="bg-background text-on-background font-body-md min-h-screen">
+    <!-- TopNavBar -->
+    <header
+      class="fixed top-0 left-0 w-full z-50 flex justify-between items-center px-lg h-16 bg-surface border-b border-outline-variant shadow-sm"
+    >
+      <div class="flex items-center gap-md">
+        <a href="create-ballot.html" class="flex items-center gap-md">
+          <span class="font-headline-md text-headline-md font-bold text-primary"
+            >Blockchain Voting</span
+          >
+        </a>
+      </div>
+
+      <div class="flex items-center gap-md">
+        <div
+          class="px-sm py-xs bg-primary-fixed text-on-primary-fixed rounded-full flex items-center gap-xs"
+        >
+          <span class="material-symbols-outlined text-[16px]"
+            >verified_user</span
+          >
+          <span class="font-label-md text-[12px] font-bold">CỬ TRI</span>
+        </div>
+        <div
+          class="flex items-center gap-sm px-md py-xs bg-secondary-container/10 border border-secondary/20 rounded-full"
+        >
+          <div
+            class="w-6 h-6 rounded-full bg-gradient-to-tr from-primary to-secondary"
+          ></div>
+          <span class="font-mono-label text-mono-label text-secondary"
+            >0x742d...8F44</span
+          >
+        </div>
+      </div>
+    </header>
+    <!-- Main Content Canvas -->
+    <main class="pt-24 pb-24 md:pb-xl px-md md:px-xl max-w-7xl mx-auto">
+      <!-- Breadcrumb -->
+      <a
+        href="create-ballot.html"
+        class="inline-flex items-center gap-xs font-label-md text-label-md text-on-surface-variant hover:text-primary transition-colors mb-md"
+      >
+        <span class="material-symbols-outlined text-[18px]">arrow_back</span>
+        Quay lại danh sách cuộc bầu cử
+      </a>
+      <header class="mb-xl">
+        <h1 class="font-headline-lg text-headline-lg text-on-surface mb-xs">
+          Bầu cử Hội đồng Quản trị DAO 2024
+        </h1>
+        <p class="font-body-md text-body-md text-on-surface-variant">
+          Vui lòng chọn 01 ứng viên bạn tin tưởng nhất để đại diện cho cộng
+          đồng. Mỗi ví chỉ được bỏ phiếu 01 lần cho cuộc bầu cử này.
+        </p>
+      </header>
+      <!-- Grid ung vien -->
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-lg">
+        <!-- Ung vien 1 -->
+        <div
+          class="candidate-card bg-surface p-lg rounded-xl border border-outline-variant hover:shadow-lg transition-all group"
+        >
+          <div class="flex items-start justify-between mb-md">
+            <div
+              class="w-16 h-16 rounded-full bg-surface-container-high overflow-hidden border-2 border-primary"
+            >
+              <img
+                class="w-full h-full object-cover"
+                data-alt="A professional studio portrait of a confident technology leader with short hair, wearing a modern charcoal grey blazer. The background is a clean, minimalist corporate blue with soft ambient lighting, conveying trust and expertise in a high-end digital finance environment."
+                src="https://lh3.googleusercontent.com/aida-public/AB6AXuDSZX2t-xzl-r79YWmUgZowlhNJmfn0CvwrFzJM59xqeHjmwN0LE_DCVpMmgu9j7aMmGDCJ79VZAnRh2Ji2Vsn6ZokNDYxERFnyukB3KHQXdided24N1iZ6LDLOFokxSR_6V0mehzSUz05Z6lug_Nepx2YFAvsgXiqh_SBhqQUU5uv2g330rYAoIqFwS3dJP9cnHGl5qhtgN_U0-86k6_X4zkFbj6h2gna3TmooISRBv4W64ibRg3Bk4swy-1LetBUPWdvozmwgv4Y"
+              />
+            </div>
+            <span
+              class="px-sm py-xs bg-emerald-100 text-emerald-700 text-xs font-bold rounded-full flex items-center gap-1"
+            >
+              <span
+                class="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"
+              ></span>
+              Đã xác thực
+            </span>
+          </div>
+          <h4 class="font-headline-md text-headline-md text-on-surface mb-xs">
+            Nguyễn Văn A
+          </h4>
+          <p
+            class="font-body-sm text-body-sm text-on-surface-variant mb-lg line-clamp-2"
+          >
+            Chuyên gia Blockchain với hơn 10 năm kinh nghiệm trong việc xây dựng
+            các giao thức DeFi và quản trị phi tập trung.
+          </p>
+          <button
+            type="button"
+            class="select-candidate-btn w-full px-md py-sm bg-primary text-on-primary rounded-lg font-label-md text-label-md group-hover:scale-105 transition-transform"
+            data-name="Nguyễn Văn A"
+            data-role="Ứng viên Hội đồng DAO"
+            data-photo="https://lh3.googleusercontent.com/aida-public/AB6AXuDSZX2t-xzl-r79YWmUgZowlhNJmfn0CvwrFzJM59xqeHjmwN0LE_DCVpMmgu9j7aMmGDCJ79VZAnRh2Ji2Vsn6ZokNDYxERFnyukB3KHQXdided24N1iZ6LDLOFokxSR_6V0mehzSUz05Z6lug_Nepx2YFAvsgXiqh_SBhqQUU5uv2g330rYAoIqFwS3dJP9cnHGl5qhtgN_U0-86k6_X4zkFbj6h2gna3TmooISRBv4W64ibRg3Bk4swy-1LetBUPWdvozmwgv4Y"
+          >
+            Chọn ứng viên
+          </button>
+        </div>
+        <!-- Ung vien 2 -->
+        <div
+          class="candidate-card bg-surface p-lg rounded-xl border border-outline-variant hover:shadow-lg transition-all group"
+        >
+          <div class="flex items-start justify-between mb-md">
+            <div
+              class="w-16 h-16 rounded-full bg-surface-container-high overflow-hidden border-2 border-primary"
+            >
+              <img
+                class="w-full h-full object-cover"
+                data-alt="A professional portrait of Le Thu Thuy, a sophisticated Asian female professional in her 30s. She is wearing a cream-colored minimalist blouse, standing in a brightly lit modern office environment with soft focus on the background technology screens."
+                src="https://lh3.googleusercontent.com/aida-public/AB6AXuAAGRPeglVqBdpK4HEM65M78zvBFYpvWi7OmYdyAeJU_LyncnE2Hp1SFnNV4UIdM0R5uPM67ZiJYFr4eMiumeYwWWlvrvClJasIgm_Ie2smslfY1TSrS0ztShyp3whzyK6dvfQuGxst4MEgAvj3IA-Cbjj_3ow_5DbCyBg4AM9VqFbBIjTsg7CmXRo5XyulfApNUrk02QK3-R056DNDt5kfn4EZnONrRLcWMYlnTTg3n4R1ttly694vjmy7ziVjZmG_7hrJLCQtFcY"
+              />
+            </div>
+            <span
+              class="px-sm py-xs bg-emerald-100 text-emerald-700 text-xs font-bold rounded-full flex items-center gap-1"
+            >
+              <span
+                class="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"
+              ></span>
+              Đã xác thực
+            </span>
+          </div>
+          <h4 class="font-headline-md text-headline-md text-on-surface mb-xs">
+            Lê Thu Thủy
+          </h4>
+          <p
+            class="font-body-sm text-body-sm text-on-surface-variant mb-lg line-clamp-2"
+          >
+            Đóng góp quan trọng trong việc mở rộng mạng lưới đối tác chiến lược
+            tại khu vực Đông Nam Á cho các quỹ đầu tư Blockchain lớn.
+          </p>
+          <button
+            type="button"
+            class="select-candidate-btn w-full px-md py-sm bg-primary text-on-primary rounded-lg font-label-md text-label-md group-hover:scale-105 transition-transform"
+            data-name="Lê Thu Thủy"
+            data-role="Ứng viên Hội đồng DAO"
+            data-photo="https://lh3.googleusercontent.com/aida-public/AB6AXuAAGRPeglVqBdpK4HEM65M78zvBFYpvWi7OmYdyAeJU_LyncnE2Hp1SFnNV4UIdM0R5uPM67ZiJYFr4eMiumeYwWWlvrvClJasIgm_Ie2smslfY1TSrS0ztShyp3whzyK6dvfQuGxst4MEgAvj3IA-Cbjj_3ow_5DbCyBg4AM9VqFbBIjTsg7CmXRo5XyulfApNUrk02QK3-R056DNDt5kfn4EZnONrRLcWMYlnTTg3n4R1ttly694vjmy7ziVjZmG_7hrJLCQtFcY"
+          >
+            Chọn ứng viên
+          </button>
+        </div>
+        <!-- Ung vien 3 -->
+        <div
+          class="candidate-card bg-surface p-lg rounded-xl border border-outline-variant hover:shadow-lg transition-all group"
+        >
+          <div class="flex items-start justify-between mb-md">
+            <div
+              class="w-16 h-16 rounded-full bg-surface-container-high overflow-hidden border-2 border-primary"
+            >
+              <img
+                class="w-full h-full object-cover"
+                data-alt="A portrait of an experienced legal expert in the digital asset space. A woman with a confident smile, wearing an elegant cream-colored suit. The setting is a bright, modern interior with subtle bokeh effects from large windows."
+                src="https://lh3.googleusercontent.com/aida-public/AB6AXuB2LqfZzXPv2Ii0Dt8LsoGxhvOCbkywxlIThASkrzbDqUOom0KWBJoW52NIxkdk04MNwazoUDHgjKQ5XYTmqRSvgm9Xpb2llE6BvhYlTNiixOcRMBAO-9MDW6VbI3GFZT2w-Eyn0prRD9DxEGunWAkTR6ewmwmRVSG7YGvqYfyuB9powzF2w910p425mKFaF-EdNEglFPlLphr7n0zT_Ea1dzpFqledSV5zFPBPX3RrUzgic9diUMS9QR3bHN4pbo512WO2NpQGqyg"
+              />
+            </div>
+            <span
+              class="px-sm py-xs bg-emerald-100 text-emerald-700 text-xs font-bold rounded-full flex items-center gap-1"
+            >
+              <span
+                class="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"
+              ></span>
+              Đã xác thực
+            </span>
+          </div>
+          <h4 class="font-headline-md text-headline-md text-on-surface mb-xs">
+            Phạm Minh D
+          </h4>
+          <p
+            class="font-body-sm text-body-sm text-on-surface-variant mb-lg line-clamp-2"
+          >
+            Hỗ trợ pháp lý cho hàng chục dự án ICO/IEO. Chuyên gia về tuân thủ
+            quy định và khung pháp lý tài sản số tại Việt Nam.
+          </p>
+          <button
+            type="button"
+            class="select-candidate-btn w-full px-md py-sm bg-primary text-on-primary rounded-lg font-label-md text-label-md group-hover:scale-105 transition-transform"
+            data-name="Phạm Minh D"
+            data-role="Ứng viên Hội đồng DAO"
+            data-photo="https://lh3.googleusercontent.com/aida-public/AB6AXuB2LqfZzXPv2Ii0Dt8LsoGxhvOCbkywxlIThASkrzbDqUOom0KWBJoW52NIxkdk04MNwazoUDHgjKQ5XYTmqRSvgm9Xpb2llE6BvhYlTNiixOcRMBAO-9MDW6VbI3GFZT2w-Eyn0prRD9DxEGunWAkTR6ewmwmRVSG7YGvqYfyuB9powzF2w910p425mKFaF-EdNEglFPlLphr7n0zT_Ea1dzpFqledSV5zFPBPX3RrUzgic9diUMS9QR3bHN4pbo512WO2NpQGqyg"
+          >
+            Chọn ứng viên
+          </button>
+        </div>
+      </div>
+    </main>
+    <!-- MODAL OVERLAY -->
+    <div
+      class="hidden fixed inset-0 z-[100] items-center justify-center p-md glass-overlay"
+      id="voteModal"
+    >
+      <!-- Modal Container -->
+      <div
+        class="bg-surface w-full max-w-[480px] rounded-xl overflow-hidden modal-shadow animate-modal-in border border-outline-variant"
+      >
+        <!-- Modal Header -->
+        <div
+          class="p-lg border-b border-outline-variant flex items-center justify-between"
+        >
+          <div class="flex items-center gap-sm">
+            <div class="p-xs bg-primary-container/10 rounded-lg">
+              <span class="material-symbols-outlined text-primary"
+                >verified</span
+              >
+            </div>
+            <h2 class="font-headline-md text-headline-md text-on-surface">
+              Xác nhận bỏ phiếu
+            </h2>
+          </div>
+          <button
+            type="button"
+            class="text-on-surface-variant hover:text-error transition-colors"
+            onclick="closeModal()"
+          >
+            <span class="material-symbols-outlined">close</span>
+          </button>
+        </div>
+        <!-- Modal Content -->
+        <div class="p-lg space-y-lg">
+          <!-- Selection Info -->
+          <div
+            class="bg-surface-container-low p-md rounded-xl border border-outline-variant"
+          >
+            <p
+              class="font-body-sm text-body-sm text-on-surface-variant mb-base"
+            >
+              Bạn xác nhận chọn:
+            </p>
+            <div class="flex items-center gap-md">
+              <div
+                class="w-12 h-12 rounded-full bg-surface-container-high overflow-hidden border border-primary"
+              >
+                <img
+                  id="modalCandidatePhoto"
+                  class="w-full h-full object-cover"
+                  data-alt="Anh dai dien ung vien duoc chon"
+                  src=""
+                />
+              </div>
+              <div>
+                <p
+                  id="modalCandidateName"
+                  class="font-label-md text-label-md text-on-surface"
+                >
+                  --
+                </p>
+                <p
+                  id="modalCandidateRole"
+                  class="font-body-sm text-body-sm text-on-surface-variant"
+                >
+                  --
+                </p>
+              </div>
+            </div>
+          </div>
+          <!-- Wallet Info -->
+          <div class="space-y-xs">
+            <p class="font-label-md text-label-md text-on-surface">
+              Thông tin ví xác thực
+            </p>
+            <div
+              class="flex items-center justify-between p-sm bg-surface-bright border border-outline-variant rounded-lg"
+            >
+              <div class="flex items-center gap-sm">
+                <div
+                  class="w-8 h-8 rounded-full bg-gradient-to-tr from-primary to-secondary"
+                ></div>
+                <span class="font-mono-label text-mono-label text-on-surface"
+                  >0x742...F44</span
+                >
+              </div>
+              <span
+                class="px-xs py-[2px] bg-secondary-fixed text-on-secondary-fixed text-[10px] font-bold rounded uppercase"
+                >MetaMask</span
+              >
+            </div>
+          </div>
+          <!-- Warning Block -->
+          <div
+            class="flex gap-md p-md bg-error-container/20 border border-error/20 rounded-xl"
+          >
+            <span
+              class="material-symbols-outlined text-error"
+              style="font-variation-settings: &quot;FILL&quot; 1"
+              >warning</span
+            >
+            <div class="space-y-xs">
+              <p class="font-label-md text-label-md text-error">
+                Cảnh báo bảo mật
+              </p>
+              <p
+                class="font-body-sm text-body-sm text-on-surface-variant leading-relaxed"
+              >
+                Giao dịch sẽ được xác nhận trên
+                <span class="font-bold text-on-surface">MetaMask</span>. Hành
+                động này không thể hoàn tác sau khi đã ghi vào Blockchain.
+              </p>
+            </div>
+          </div>
+        </div>
+        <!-- Modal Footer -->
+        <div
+          class="p-lg bg-surface-container-lowest flex flex-col sm:flex-row gap-md"
+        >
+          <button
+            type="button"
+            id="confirmVoteBtn"
+            class="flex-1 px-lg py-md bg-primary text-on-primary font-label-md text-label-md rounded-xl hover:bg-on-primary-fixed-variant transition-all active:scale-[0.98] shadow-md shadow-primary/20"
+            onclick="confirmVote()"
+          >
+            Xác nhận bỏ phiếu
+          </button>
+          <button
+            type="button"
+            class="flex-1 px-lg py-md bg-surface-variant text-on-surface-variant font-label-md text-label-md rounded-xl hover:bg-surface-container-highest transition-all"
+            onclick="closeModal()"
+          >
+            Hủy bỏ
+          </button>
+        </div>
+      </div>
+    </div>
+    <!-- SideNavBar (Mobile Bottom Tab Bar) -->
+    <aside
+      class="fixed bottom-0 left-0 w-full h-16 bg-surface border-t border-outline-variant flex justify-around items-center px-md z-50"
+    >
+      <a
+        class="flex flex-col items-center gap-xs text-primary"
+        href="create-ballot.html"
+      >
+        <span
+          class="material-symbols-outlined"
+          style="font-variation-settings: &quot;FILL&quot; 1"
+          >how_to_vote</span
+        >
+        <span class="font-body-sm text-[10px]">Bầu cử</span>
+      </a>
+      <a
+        class="flex flex-col items-center gap-xs text-on-surface-variant"
+        href="vote-history.html"
+      >
+        <span class="material-symbols-outlined">history</span>
+        <span class="font-body-sm text-[10px]">Lịch sử</span>
+      </a>
+      <a
+        class="flex flex-col items-center gap-xs text-on-surface-variant"
+        href="vote-results.html"
+      >
+        <span class="material-symbols-outlined">leaderboard</span>
+        <span class="font-body-sm text-[10px]">Kết quả</span>
+      </a>
+      <a
+        class="flex flex-col items-center gap-xs text-on-surface-variant"
+        href="../auth/connect-wallet.html"
+      >
+        <span class="material-symbols-outlined">account_balance_wallet</span>
+        <span class="font-body-sm text-[10px]">Ví</span>
+      </a>
+    </aside>
+    <!-- Micro-interactions Script -->
+
+    <script src="../../JS/verify-ballot.js" defer></script>
+  </body>
+</html>

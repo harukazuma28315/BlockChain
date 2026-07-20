@@ -1,0 +1,393 @@
+<!doctype html>
+
+<html class="light" lang="vi">
+  <head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>Lịch sử bỏ phiếu | Blockchain Voting</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+      rel="stylesheet"
+    />
+
+    <link rel="stylesheet" href="../../CSS/vote-history.css" />
+  </head>
+  <body
+    class="bg-background text-on-background min-h-screen flex flex-col mesh-gradient"
+  >
+    <!-- TopNavBar -->
+    <header
+      class="fixed top-0 left-0 w-full z-50 flex justify-between items-center px-lg h-16 bg-surface dark:bg-inverse-surface border-b border-outline-variant dark:border-outline shadow-sm dark:shadow-none"
+    >
+      <div class="flex items-center gap-md">
+        <a href="create-ballot.html" class="flex items-center gap-md">
+          <span
+            class="font-headline-md text-headline-md font-bold text-primary dark:text-primary-fixed-dim"
+            >Blockchain Voting</span
+          >
+        </a>
+      </div>
+
+      <div class="flex items-center gap-md">
+        <div
+          class="px-sm py-xs bg-primary-fixed text-on-primary-fixed rounded-full flex items-center gap-xs"
+        >
+          <span class="material-symbols-outlined text-[16px]"
+            >verified_user</span
+          >
+          <span class="font-label-md text-[12px] font-bold">CỬ TRI</span>
+        </div>
+        <div
+          class="flex items-center gap-sm bg-secondary-fixed px-md py-xs rounded-full border border-outline-variant"
+        >
+          <div
+            class="w-6 h-6 rounded-full bg-primary-container flex items-center justify-center text-[10px] text-on-primary"
+          >
+            <span class="material-symbols-outlined text-[14px]"
+              >account_balance_wallet</span
+            >
+          </div>
+          <span class="font-mono-label text-mono-label text-on-secondary-fixed"
+            >0x742d...8F44</span
+          >
+        </div>
+      </div>
+    </header>
+    <!-- Main Content: Lich su bo phieu -->
+    <main
+      class="flex-grow pt-24 pb-24 md:pb-xl px-md md:px-xl max-w-6xl mx-auto w-full"
+    >
+      <div class="mb-lg">
+        <h1 class="font-headline-lg text-headline-lg text-on-surface mb-xs">
+          Lịch sử bỏ phiếu của tôi
+        </h1>
+        <p class="font-body-md text-body-md text-on-surface-variant">
+          Toàn bộ phiếu bầu bạn đã gửi lên Smart Contract, minh bạch và không
+          thể chỉnh sửa sau khi đã xác nhận.
+        </p>
+      </div>
+      <!-- Summary chips -->
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-md mb-lg">
+        <div
+          class="bg-surface-container-lowest border border-outline-variant rounded-2xl p-md flex items-center gap-md"
+        >
+          <div
+            class="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary"
+          >
+            <span class="material-symbols-outlined">how_to_vote</span>
+          </div>
+          <div>
+            <p class="font-body-sm text-on-surface-variant">
+              Tổng số lần bỏ phiếu
+            </p>
+            <p class="font-headline-md text-headline-md">3</p>
+          </div>
+        </div>
+        <div
+          class="bg-surface-container-lowest border border-outline-variant rounded-2xl p-md flex items-center gap-md"
+        >
+          <div
+            class="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-600"
+          >
+            <span class="material-symbols-outlined">task_alt</span>
+          </div>
+          <div>
+            <p class="font-body-sm text-on-surface-variant">
+              Đã ghi nhận on-chain
+            </p>
+            <p class="font-headline-md text-headline-md">3/3</p>
+          </div>
+        </div>
+        <div
+          class="bg-surface-container-lowest border border-outline-variant rounded-2xl p-md flex items-center gap-md"
+        >
+          <div
+            class="w-10 h-10 rounded-xl bg-tertiary/10 flex items-center justify-center text-tertiary"
+          >
+            <span class="material-symbols-outlined">schedule</span>
+          </div>
+          <div>
+            <p class="font-body-sm text-on-surface-variant">Lần gần nhất</p>
+            <p class="font-headline-md text-headline-md">Vừa xong</p>
+          </div>
+        </div>
+      </div>
+      <!-- History Table -->
+      <div
+        class="bg-surface-container-lowest border border-outline-variant rounded-2xl overflow-hidden shadow-sm"
+      >
+        <div class="overflow-x-auto">
+          <table class="w-full text-left">
+            <thead>
+              <tr
+                class="bg-surface-container-low border-b border-outline-variant"
+              >
+                <th
+                  class="px-lg py-md font-label-md text-label-md uppercase text-on-surface-variant"
+                >
+                  Cuộc bầu cử
+                </th>
+                <th
+                  class="px-lg py-md font-label-md text-label-md uppercase text-on-surface-variant"
+                >
+                  Ứng viên đã chọn
+                </th>
+                <th
+                  class="px-lg py-md font-label-md text-label-md uppercase text-on-surface-variant"
+                >
+                  Thời gian bỏ phiếu
+                </th>
+                <th
+                  class="px-lg py-md font-label-md text-label-md uppercase text-on-surface-variant"
+                >
+                  Mã giao dịch
+                </th>
+                <th
+                  class="px-lg py-md font-label-md text-label-md uppercase text-on-surface-variant"
+                >
+                  Trạng thái
+                </th>
+                <th
+                  class="px-lg py-md font-label-md text-label-md uppercase text-on-surface-variant"
+                >
+                  Hành động
+                </th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-outline-variant">
+              <!-- Row 1: Cuoc bau cu dang dien ra, da bo phieu -->
+              <tr class="hover:bg-surface-container-low transition-colors">
+                <td class="px-lg py-lg">
+                  <p class="font-label-md text-label-md text-on-surface">
+                    Bầu cử Hội đồng Quản trị DAO 2024
+                  </p>
+                  <p class="font-body-sm text-body-sm text-on-surface-variant">
+                    #BC-2024-01
+                  </p>
+                </td>
+                <td class="px-lg py-lg font-label-md text-label-md">
+                  Nguyễn Văn A
+                </td>
+                <td
+                  class="px-lg py-lg font-body-sm text-body-sm text-on-surface-variant"
+                >
+                  18/07/2026 - 09:42
+                </td>
+                <td class="px-lg py-lg">
+                  <div class="flex items-center gap-xs">
+                    <span
+                      class="font-mono-label text-mono-label text-on-surface"
+                      >0xabc74...447d2</span
+                    >
+                    <button
+                      type="button"
+                      class="copy-hash-btn text-primary hover:bg-primary/10 p-xs rounded transition-all"
+                      data-hash="0xabc742d93e118f447d2d3e118f447d2d3e118f44"
+                    >
+                      <span class="material-symbols-outlined text-[16px]"
+                        >content_copy</span
+                      >
+                    </button>
+                  </div>
+                </td>
+                <td class="px-lg py-lg">
+                  <span
+                    class="px-md py-xs bg-emerald-100 text-emerald-700 text-xs rounded-full font-bold uppercase"
+                    >Đã ghi nhận</span
+                  >
+                </td>
+                <td class="px-lg py-lg">
+                  <span
+                    class="px-md py-xs bg-surface-container text-on-surface-variant text-xs rounded-full font-bold uppercase inline-flex items-center gap-1"
+                  >
+                    <span class="material-symbols-outlined text-[14px]"
+                      >hourglass_top</span
+                    >
+                    Chờ kết thúc
+                  </span>
+                </td>
+              </tr>
+              <!-- Row 2: Cuoc bau cu da ket thuc -->
+              <tr class="hover:bg-surface-container-low transition-colors">
+                <td class="px-lg py-lg">
+                  <p class="font-label-md text-label-md text-on-surface">
+                    Bầu cử Ban Cố vấn Kỹ thuật 2024
+                  </p>
+                  <p class="font-body-sm text-body-sm text-on-surface-variant">
+                    #BC-2023-11
+                  </p>
+                </td>
+                <td class="px-lg py-lg font-label-md text-label-md">
+                  Phạm Minh Hoàng
+                </td>
+                <td
+                  class="px-lg py-lg font-body-sm text-body-sm text-on-surface-variant"
+                >
+                  09/07/2026 - 14:15
+                </td>
+                <td class="px-lg py-lg">
+                  <div class="flex items-center gap-xs">
+                    <span
+                      class="font-mono-label text-mono-label text-on-surface"
+                      >0x8f21c...9a03e</span
+                    >
+                    <button
+                      type="button"
+                      class="copy-hash-btn text-primary hover:bg-primary/10 p-xs rounded transition-all"
+                      data-hash="0x8f21c93e118f447d2d3e118f447d2d3e1189a03e"
+                    >
+                      <span class="material-symbols-outlined text-[16px]"
+                        >content_copy</span
+                      >
+                    </button>
+                  </div>
+                </td>
+                <td class="px-lg py-lg">
+                  <span
+                    class="px-md py-xs bg-emerald-100 text-emerald-700 text-xs rounded-full font-bold uppercase"
+                    >Đã ghi nhận</span
+                  >
+                </td>
+                <td class="px-lg py-lg">
+                  <a
+                    href="vote-results.html"
+                    class="px-md py-xs bg-primary-container text-on-primary-container text-xs rounded-full font-bold uppercase inline-flex items-center gap-1 hover:bg-primary-container/90 transition-colors"
+                  >
+                    <span class="material-symbols-outlined text-[14px]"
+                      >leaderboard</span
+                    >
+                    Xem kết quả
+                  </a>
+                </td>
+              </tr>
+              <!-- Row 3: Cuoc bau cu da ket thuc -->
+              <tr class="hover:bg-surface-container-low transition-colors">
+                <td class="px-lg py-lg">
+                  <p class="font-label-md text-label-md text-on-surface">
+                    Bầu cử Ngân sách Phát triển Cộng đồng
+                  </p>
+                  <p class="font-body-sm text-body-sm text-on-surface-variant">
+                    #BC-2023-08
+                  </p>
+                </td>
+                <td class="px-lg py-lg font-label-md text-label-md">
+                  Lê Thu Thủy
+                </td>
+                <td
+                  class="px-lg py-lg font-body-sm text-body-sm text-on-surface-variant"
+                >
+                  01/05/2026 - 11:03
+                </td>
+                <td class="px-lg py-lg">
+                  <div class="flex items-center gap-xs">
+                    <span
+                      class="font-mono-label text-mono-label text-on-surface"
+                      >0x2216f...bb44f</span
+                    >
+                    <button
+                      type="button"
+                      class="copy-hash-btn text-primary hover:bg-primary/10 p-xs rounded transition-all"
+                      data-hash="0x2216f93e118f447d2d3e118f447d2d3e11bb44f"
+                    >
+                      <span class="material-symbols-outlined text-[16px]"
+                        >content_copy</span
+                      >
+                    </button>
+                  </div>
+                </td>
+                <td class="px-lg py-lg">
+                  <span
+                    class="px-md py-xs bg-emerald-100 text-emerald-700 text-xs rounded-full font-bold uppercase"
+                    >Đã ghi nhận</span
+                  >
+                </td>
+                <td class="px-lg py-lg">
+                  <a
+                    href="vote-results.html"
+                    class="px-md py-xs bg-primary-container text-on-primary-container text-xs rounded-full font-bold uppercase inline-flex items-center gap-1 hover:bg-primary-container/90 transition-colors"
+                  >
+                    <span class="material-symbols-outlined text-[14px]"
+                      >leaderboard</span
+                    >
+                    Xem kết quả
+                  </a>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <!-- Empty state (an theo mac dinh, hien khi chua co du lieu that) -->
+      <div id="historyEmptyState" class="hidden text-center py-xl">
+        <span class="material-symbols-outlined text-5xl text-outline-variant"
+          >history_toggle_off</span
+        >
+        <p
+          class="font-body-md text-body-md text-on-surface-variant mt-sm mb-md"
+        >
+          Bạn chưa tham gia bỏ phiếu lần nào.
+        </p>
+        <a
+          href="create-ballot.html"
+          class="inline-flex items-center gap-xs px-lg py-sm bg-primary text-on-primary rounded-xl font-label-md text-label-md"
+        >
+          <span class="material-symbols-outlined">how_to_vote</span>
+          Xem danh sách cuộc bầu cử
+        </a>
+      </div>
+    </main>
+    <!-- Footer -->
+    <footer
+      class="hidden md:flex h-16 items-center justify-center border-t border-outline-variant/30"
+    >
+      <p class="font-label-md text-label-md text-outline">
+        © 2026 Blockchain Voting System • Secure DAO Governance
+      </p>
+    </footer>
+    <!-- SideNavBar (Mobile Bottom Tab Bar) -->
+    <aside
+      class="fixed bottom-0 left-0 w-full h-16 bg-surface border-t border-outline-variant flex justify-around items-center px-md z-50"
+    >
+      <a
+        class="flex flex-col items-center gap-xs text-on-surface-variant"
+        href="create-ballot.html"
+      >
+        <span class="material-symbols-outlined">how_to_vote</span>
+        <span class="font-body-sm text-[10px]">Bầu cử</span>
+      </a>
+      <a
+        class="flex flex-col items-center gap-xs text-primary"
+        href="vote-history.html"
+      >
+        <span
+          class="material-symbols-outlined"
+          style="font-variation-settings: &quot;FILL&quot; 1"
+          >history</span
+        >
+        <span class="font-body-sm text-[10px]">Lịch sử</span>
+      </a>
+      <a
+        class="flex flex-col items-center gap-xs text-on-surface-variant"
+        href="vote-results.html"
+      >
+        <span class="material-symbols-outlined">leaderboard</span>
+        <span class="font-body-sm text-[10px]">Kết quả</span>
+      </a>
+      <a
+        class="flex flex-col items-center gap-xs text-on-surface-variant"
+        href="../auth/connect-wallet.html"
+      >
+        <span class="material-symbols-outlined">account_balance_wallet</span>
+        <span class="font-body-sm text-[10px]">Ví</span>
+      </a>
+    </aside>
+    <!-- Micro-interactions Script -->
+
+    <script src="../../JS/vote-history.js" defer></script>
+  </body>
+</html>

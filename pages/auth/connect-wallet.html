@@ -1,0 +1,175 @@
+<!doctype html>
+<html class="light" lang="vi">
+  <head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>Kết nối Ví - Blockchain Voting</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
+      rel="stylesheet"
+    />
+
+    <link rel="stylesheet" href="../../CSS/connect-wallet.css" />
+    <script src="https://cdn.ethers.io/lib/ethers-5.7.umd.min.js"></script>
+  </head>
+  <body class="bg-background text-on-background min-h-screen flex flex-col">
+    <!-- Top Navigation -->
+    <header
+      class="fixed top-0 left-0 w-full z-50 flex justify-between items-center px-lg h-16 bg-surface border-b border-outline-variant shadow-sm"
+    >
+      <div class="flex items-center gap-md">
+        <span class="font-headline-md text-headline-md font-bold text-primary"
+          >Blockchain Voting</span
+        >
+      </div>
+      <nav class="hidden md:flex items-center gap-lg">
+        <a
+          class="font-label-md text-label-md text-on-surface-variant hover:text-primary transition-colors"
+          href="../landing/home.html"
+          >Giới thiệu</a
+        >
+        <a
+          class="font-label-md text-label-md text-on-surface-variant hover:text-primary transition-colors"
+          href="../voting/verify-ballot.html"
+          >Hướng dẫn</a
+        >
+      </nav>
+      <div
+        id="nav-wallet-badge"
+        class="hidden font-mono-label text-mono-label px-md py-sm bg-secondary-fixed text-on-secondary-fixed rounded-full border border-secondary flex items-center gap-sm"
+      >
+        <div class="w-2 h-2 rounded-full bg-emerald-500"></div>
+        <span id="nav-address">0x...</span>
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <main
+      class="flex-grow flex items-center justify-center pt-16 px-md relative overflow-hidden"
+    >
+      <div class="absolute inset-0 z-0 pointer-events-none opacity-20"></div>
+
+      <div
+        id="connection-card"
+        class="relative z-10 w-full max-w-md bg-surface-container-lowest rounded-xl border border-outline-variant shadow-lg p-xl flex flex-col items-center text-center transition-all duration-500"
+      >
+        <!-- Icon -->
+        <div class="mb-lg relative">
+          <div
+            class="w-32 h-32 rounded-full bg-surface-container-high flex items-center justify-center p-md border border-outline-variant"
+          >
+            <img
+              id="wallet-icon"
+              class="w-full h-auto"
+              src="https://lh3.googleusercontent.com/aida-public/AB6AXuBOyfFOJdqW7Vg-0g5KMtnY3hhP1trzz2emN89utOuOvMSCXx-eHf4dSCrQrJz_KgquHuVtOaBNG5Wi1MPTvliYcFte5KHd4X-kMUa92U29P3K6d5c-A9CmrSx8bn4YcySapVWtytrDml92Fs47ydiu0e0V0DTw5GpFT0RnaC3rSU8ex5cqYlAIlYaXwx1t5TQ6WRq6iCOiF9AWp02Xc0U80-6NSc6I6zeq8HmVVen6XS4q0iE73Rjbxs7X5x6uRyhms3popClYhEk"
+              alt="MetaMask"
+            />
+          </div>
+          <div
+            id="status-badge"
+            class="absolute -bottom-2 right-2 px-md py-xs bg-surface-variant text-on-surface-variant rounded-full text-xs font-bold border border-outline flex items-center gap-xs"
+          >
+            <span class="w-2 h-2 rounded-full bg-neutral-400"></span>
+            Chưa kết nối
+          </div>
+        </div>
+
+        <!-- Chưa kết nối -->
+        <div id="connection-content">
+          <h1 class="font-headline-md text-headline-md text-on-surface mb-sm">
+            Kết nối Ví của bạn
+          </h1>
+          <p class="font-body-md text-body-md text-on-surface-variant mb-xl">
+            Vui lòng kết nối MetaMask để tham gia bỏ phiếu trong hệ thống DAO.
+          </p>
+          <button
+            id="connect-btn"
+            class="w-full py-md px-xl bg-primary-container text-on-primary font-label-md text-label-md rounded-lg shadow-sm hover:opacity-90 active:scale-95 transition-all flex items-center justify-center gap-md"
+          >
+            <span class="material-symbols-outlined"
+              >account_balance_wallet</span
+            >
+            <span id="connect-btn-label">Kết nối MetaMask</span>
+          </button>
+          <p
+            id="no-metamask-notice"
+            class="hidden mt-md font-body-sm text-body-sm text-error"
+          >
+            Không tìm thấy MetaMask trong trình duyệt.
+            <a
+              class="underline font-semibold"
+              href="https://metamask.io/download/"
+              target="_blank"
+              rel="noopener"
+              >Cài đặt MetaMask</a
+            >
+            rồi tải lại trang.
+          </p>
+        </div>
+
+        <!-- Đã kết nối -->
+        <div id="connected-content" class="hidden w-full">
+          <h1 class="font-headline-md text-headline-md text-on-surface mb-sm">
+            Chào mừng quay trở lại
+          </h1>
+          <div
+            class="bg-surface-container-low p-md rounded-xl border border-outline-variant mb-lg text-left"
+          >
+            <div class="flex justify-between items-center mb-md">
+              <span class="font-label-md text-label-md text-on-surface-variant"
+                >Địa chỉ ví</span
+              >
+              <span
+                id="wallet-address"
+                class="font-mono-label text-mono-label text-primary font-bold"
+                >0x...</span
+              >
+            </div>
+            <hr class="border-outline-variant mb-md" />
+            <div class="flex justify-between items-center">
+              <span class="font-label-md text-label-md text-on-surface-variant"
+                >Vai trò</span
+              >
+              <span
+                id="role-status"
+                class="font-label-md text-label-md text-primary italic"
+                >Đang kiểm tra...</span
+              >
+            </div>
+          </div>
+          <div class="grid grid-cols-2 gap-md">
+            <button
+              onclick="disconnectWallet()"
+              class="py-sm px-md border border-error text-error font-label-md text-label-md rounded-lg hover:bg-error-container transition-colors"
+            >
+              Ngắt kết nối
+            </button>
+            <button
+              onclick="continueToDashboard()"
+              class="py-sm px-md bg-primary text-on-primary font-label-md text-label-md rounded-lg hover:bg-primary/90 transition-colors"
+            >
+              Tiếp tục
+            </button>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Footer -->
+    <footer
+      class="h-16 flex items-center justify-center gap-sm text-on-surface-variant opacity-60"
+    >
+      <span class="material-symbols-outlined text-[18px]">verified_user</span>
+      <span class="font-body-sm text-body-sm"
+        >Bảo mật bởi Blockchain & Smart Contract</span
+      >
+    </footer>
+
+    <script src="../../JS/connect-wallet.js" defer></script>
+  </body>
+</html>

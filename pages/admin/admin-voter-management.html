@@ -1,0 +1,334 @@
+<!doctype html>
+<html class="light" lang="vi">
+  <head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>Quản lý cử tri - Blockchain Voting</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../CSS/admin-voter-management.css" />
+  </head>
+  <body class="bg-background text-on-background min-h-screen">
+    <!-- TopNavBar -->
+    <header
+      class="fixed top-0 left-0 w-full z-50 flex justify-between items-center px-lg h-16 bg-surface border-b border-outline-variant shadow-sm"
+    >
+      <div class="flex items-center gap-sm">
+        <span class="material-symbols-outlined text-primary text-3xl"
+          >token</span
+        >
+        <h1 class="font-headline-md text-headline-md font-bold text-primary">
+          Blockchain Voting
+        </h1>
+      </div>
+      <nav class="hidden md:flex gap-lg">
+        <a
+          class="font-label-md text-label-md text-on-surface-variant hover:text-primary transition-colors"
+          href="../landing/home.html"
+          >Giới thiệu</a
+        >
+        <a
+          class="font-label-md text-label-md text-on-surface-variant hover:text-primary transition-colors"
+          href="../voting/verify-ballot.html"
+          >Hướng dẫn</a
+        >
+      </nav>
+      <!-- Wallet / MetaMask Badge -->
+      <div
+        id="wallet-badge"
+        class="flex items-center gap-sm bg-secondary-container/10 border border-secondary-container/20 px-sm py-1.5 rounded-full opacity-50 transition-opacity"
+      >
+        <span
+          class="px-2 py-0.5 rounded-full bg-primary text-white text-[10px] font-bold tracking-wider"
+          >ADMIN</span
+        >
+        <button
+          id="connect-wallet-btn"
+          class="font-mono-label text-mono-label text-secondary font-bold hover:underline"
+          type="button"
+        >
+          Kết nối ví Admin
+        </button>
+        <span id="wallet-address" class="hidden"></span>
+        <div class="flex items-center gap-1">
+          <span
+            id="system-status-dot-header"
+            class="w-2 h-2 rounded-full bg-outline"
+          ></span>
+          <span
+            id="wallet-status"
+            class="text-[11px] text-on-surface-variant font-medium"
+            >Chưa kết nối</span
+          >
+        </div>
+      </div>
+    </header>
+
+    <!-- SideNavBar -->
+    <aside
+      class="fixed left-0 top-16 h-[calc(100vh-64px)] w-64 flex flex-col p-md z-40 bg-surface-container-low"
+    >
+      <div class="flex items-center gap-md mb-xl px-sm">
+        <div
+          class="w-10 h-10 rounded-xl bg-primary-container flex items-center justify-center"
+        >
+          <span class="material-symbols-outlined text-on-primary-container"
+            >shield_person</span
+          >
+        </div>
+        <div>
+          <h2 class="font-label-md text-label-md text-on-surface">
+            Quản trị viên
+          </h2>
+          <p
+            class="font-body-sm text-body-sm text-on-surface-variant opacity-70"
+          >
+            Hệ thống bầu cử DAO
+          </p>
+        </div>
+      </div>
+      <nav class="flex flex-col gap-xs flex-1 custom-scrollbar overflow-y-auto">
+        <a
+          class="flex items-center gap-md px-md py-sm text-on-surface-variant hover:bg-surface-container-high rounded-xl transition-all"
+          href="admin-dashboard.html"
+        >
+          <span class="material-symbols-outlined">dashboard</span>
+          <span class="font-label-md text-label-md">Tổng quan</span>
+        </a>
+        <a
+          class="flex items-center gap-md px-md py-sm text-on-surface-variant hover:bg-surface-container-high rounded-xl transition-all"
+          href="admin-ballot-management.html"
+        >
+          <span class="material-symbols-outlined">how_to_vote</span>
+          <span class="font-label-md text-label-md">Quản lý bầu cử</span>
+        </a>
+        <a
+          class="flex items-center gap-md px-md py-sm text-on-surface-variant hover:bg-surface-container-high rounded-xl transition-all"
+          href="admin-candidate-management.html"
+        >
+          <span class="material-symbols-outlined">groups</span>
+          <span class="font-label-md text-label-md">Ứng viên</span>
+        </a>
+        <a
+          class="flex items-center gap-md px-md py-sm bg-primary-container text-on-primary-container rounded-xl transition-all sidebar-active"
+          href="admin-voter-management.html"
+        >
+          <span class="material-symbols-outlined">person_search</span>
+          <span class="font-label-md text-label-md">Cử tri</span>
+        </a>
+        <a
+          class="flex items-center gap-md px-md py-sm text-on-surface-variant hover:bg-surface-container-high rounded-xl transition-all"
+          href="admin-system-control.html"
+        >
+          <span class="material-symbols-outlined"
+            >settings_input_component</span
+          >
+          <span class="font-label-md text-label-md">Điều khiển</span>
+        </a>
+        <a
+          class="flex items-center gap-md px-md py-sm text-on-surface-variant hover:bg-surface-container-high rounded-xl transition-all"
+          href="admin-transaction-history.html"
+        >
+          <span class="material-symbols-outlined">leaderboard</span>
+          <span class="font-label-md text-label-md">Thống kê</span>
+        </a>
+      </nav>
+      <div class="mt-auto pt-md border-t border-outline-variant space-y-xs">
+        <a
+          class="flex items-center gap-md px-md py-sm text-on-surface-variant hover:bg-surface-container-high rounded-xl transition-all"
+          href="../auth/connect-wallet.html"
+        >
+          <span class="material-symbols-outlined">account_balance_wallet</span>
+          <span class="font-label-md text-label-md">Ví của tôi</span>
+        </a>
+        <button
+          class="flex w-full items-center gap-md px-md py-sm text-error hover:bg-error-container/10 transition-all rounded-xl"
+        >
+          <span class="material-symbols-outlined">logout</span>
+          <span class="font-label-md text-label-md">Đăng xuất</span>
+        </button>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="ml-64 mt-16 p-lg min-h-screen">
+      <div class="max-w-[1200px] mx-auto">
+        <!-- Cảnh báo nếu chưa kết nối ví Admin -->
+        <div
+          id="admin-guard-warning"
+          class="hidden mb-lg p-md bg-error-container/20 border border-error-container rounded-xl flex items-center gap-md"
+        >
+          <span class="material-symbols-outlined text-error">warning</span>
+          <p class="font-body-sm text-body-sm text-on-surface">
+            Vui lòng kết nối ví MetaMask có quyền Admin để sử dụng đầy đủ chức
+            năng quản trị.
+          </p>
+        </div>
+
+        <div
+          class="flex flex-col md:flex-row md:items-center justify-between gap-md mb-lg"
+        >
+          <div>
+            <h1 class="font-headline-lg text-headline-lg text-on-surface">
+              Quản lý cử tri
+            </h1>
+            <p class="font-body-md text-body-md text-on-surface-variant">
+              Thêm, xác thực và quản lý quyền bỏ phiếu của cử tri trong danh
+              sách trắng (whitelist).
+            </p>
+          </div>
+          <button
+            data-admin-only
+            class="flex items-center justify-center gap-sm px-lg h-12 bg-primary-container text-white rounded-xl font-label-md text-label-md hover:bg-primary transition-all shadow-md active:scale-95"
+            onclick="bvToggleModal('add-voter-modal')"
+          >
+            <span class="material-symbols-outlined">add</span>
+            Thêm cử tri
+          </button>
+        </div>
+
+        <div class="glass-card rounded-xl overflow-hidden">
+          <div
+            class="p-lg border-b border-outline-variant flex flex-col sm:flex-row justify-between items-start sm:items-center gap-md"
+          >
+            <div class="relative w-full sm:w-80">
+              <span
+                class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant"
+                >search</span
+              >
+              <input
+                id="voter-search"
+                type="text"
+                placeholder="Tìm theo tên hoặc địa chỉ ví..."
+                class="w-full h-11 pl-10 pr-md border border-outline rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-all bg-white"
+              />
+            </div>
+            <p
+              id="voters-count"
+              class="font-body-sm text-body-sm text-on-surface-variant"
+            >
+              Hiển thị 0 trên tổng số 0 cử tri
+            </p>
+          </div>
+          <div class="overflow-x-auto custom-scrollbar">
+            <table class="w-full text-left">
+              <thead class="bg-surface-container-low">
+                <tr>
+                  <th
+                    class="px-lg py-md font-label-md text-label-md text-on-surface-variant"
+                  >
+                    Cử tri
+                  </th>
+                  <th
+                    class="px-lg py-md font-label-md text-label-md text-on-surface-variant text-center"
+                  >
+                    Xác thực
+                  </th>
+                  <th
+                    class="px-lg py-md font-label-md text-label-md text-on-surface-variant text-center"
+                  >
+                    Quyền bỏ phiếu
+                  </th>
+                  <th
+                    class="px-lg py-md font-label-md text-label-md text-on-surface-variant text-right"
+                  >
+                    Thao tác
+                  </th>
+                </tr>
+              </thead>
+              <tbody
+                id="voters-table-body"
+                class="divide-y divide-outline-variant"
+              ></tbody>
+            </table>
+            <div id="voters-empty-state" class="hidden p-xl text-center">
+              <span
+                class="material-symbols-outlined text-4xl text-on-surface-variant opacity-40"
+                >person_search</span
+              >
+              <p
+                class="font-body-md text-body-md text-on-surface-variant mt-sm"
+              >
+                Không tìm thấy cử tri phù hợp.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+    <!-- Modal: Thêm cử tri -->
+    <div
+      class="hidden fixed inset-0 z-[100] flex items-center justify-center p-md bg-on-background/40 backdrop-blur-sm transition-opacity opacity-0 duration-300"
+      id="add-voter-modal"
+    >
+      <div
+        class="bg-surface-container-lowest w-full max-w-lg rounded-xl shadow-2xl overflow-hidden transform scale-95 transition-transform duration-300"
+      >
+        <div
+          class="px-lg py-md bg-surface-container-low border-b border-outline-variant flex items-center justify-between"
+        >
+          <h3 class="font-headline-md text-headline-md text-on-surface">
+            Thêm cử tri mới
+          </h3>
+          <button
+            class="p-xs text-on-surface-variant hover:bg-surface-variant rounded-full"
+            onclick="bvToggleModal('add-voter-modal')"
+            type="button"
+          >
+            <span class="material-symbols-outlined">close</span>
+          </button>
+        </div>
+        <form id="add-voter-form" class="p-lg space-y-md">
+          <div class="space-y-xs">
+            <label class="font-label-md text-label-md text-on-surface"
+              >Họ và tên cử tri</label
+            >
+            <input
+              id="voter-name-input"
+              class="w-full h-12 px-md border border-outline rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-all bg-white"
+              placeholder="Nhập họ và tên..."
+              type="text"
+              required
+            />
+          </div>
+          <div class="space-y-xs">
+            <label class="font-label-md text-label-md text-on-surface"
+              >Địa chỉ ví (Wallet Address)</label
+            >
+            <input
+              id="voter-address-input"
+              class="w-full h-12 px-md border border-outline rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-all bg-white font-mono-label"
+              placeholder="0x..."
+              type="text"
+              required
+            />
+          </div>
+          <div class="pt-md flex gap-md">
+            <button
+              class="flex-1 h-12 border border-outline text-on-surface-variant font-label-md rounded-xl hover:bg-surface-container-low transition-all"
+              onclick="bvToggleModal('add-voter-modal')"
+              type="button"
+            >
+              Hủy bỏ
+            </button>
+            <button
+              class="flex-1 h-12 bg-primary text-white font-label-md rounded-xl hover:opacity-90 shadow-md active:scale-95 transition-all"
+              type="submit"
+            >
+              Lưu thông tin
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <script src="../../JS/admin-voter-management.js" defer></script>
+  </body>
+</html>

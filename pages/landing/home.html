@@ -1,0 +1,405 @@
+<!doctype html>
+
+<html class="light" lang="vi">
+  <head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>Blockchain Voting - Hệ thống Bầu cử Minh bạch</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+      rel="stylesheet"
+    />
+    <!-- Use the provided Tailwind Config -->
+
+    <link rel="stylesheet" href="../../CSS/home.css" />
+  </head>
+  <body class="text-on-surface">
+    <!-- TopNavBar (Shared Component) -->
+    <header
+      class="fixed top-0 left-0 w-full z-50 flex justify-between items-center px-lg h-16 bg-surface dark:bg-inverse-surface border-b border-outline-variant dark:border-outline shadow-sm dark:shadow-none"
+    >
+      <div class="flex items-center gap-md">
+        <span
+          class="font-headline-md text-headline-md font-bold text-primary dark:text-primary-fixed-dim"
+          >Blockchain Voting</span
+        >
+      </div>
+      <nav class="hidden md:flex items-center gap-lg">
+        <a
+          class="font-label-md text-label-md text-primary dark:text-primary-fixed-dim border-b-2 border-primary dark:border-primary-fixed-dim pb-1 hover:text-primary dark:hover:text-primary-fixed-dim transition-colors"
+          href="../auth/connect-wallet.html"
+          >Giới thiệu</a
+        >
+        <a
+          class="font-label-md text-label-md text-on-surface-variant dark:text-surface-variant hover:text-primary dark:hover:text-primary-fixed-dim transition-colors"
+          href="../voting/verify-ballot.html"
+          >Hướng dẫn</a
+        >
+      </nav>
+      <div class="flex items-center gap-md">
+        <div
+          id="nav-wallet-badge"
+          class="hidden font-mono-label text-mono-label px-md py-sm bg-secondary-fixed text-on-secondary-fixed rounded-full border border-secondary items-center gap-sm"
+        >
+          <div class="w-2 h-2 rounded-full bg-emerald-500"></div>
+          <span id="nav-address">0x...</span>
+        </div>
+        <button
+          id="connect-wallet-btn-nav"
+          class="bv-connect-btn bg-primary-container text-on-primary font-label-md text-label-md px-md py-sm rounded-xl flex items-center gap-sm active:opacity-80 active:scale-95 transition-all shadow-md"
+        >
+          <span class="material-symbols-outlined text-[20px]"
+            >account_balance_wallet</span
+          >
+          <span class="bv-connect-btn-label">Kết nối ví MetaMask</span>
+        </button>
+      </div>
+    </header>
+    <main class="pt-16">
+      <!-- Hero Section -->
+      <section
+        class="relative overflow-hidden hero-gradient min-h-[870px] flex items-center px-md lg:px-0"
+      >
+        <!-- Background Decoration -->
+        <div
+          class="absolute top-0 right-0 -z-10 translate-x-1/4 -translate-y-1/4 opacity-30"
+        >
+          <div
+            class="w-[600px] h-[600px] bg-primary rounded-full blur-[120px]"
+          ></div>
+        </div>
+        <div
+          class="max-w-container-max mx-auto grid lg:grid-cols-2 gap-xl items-center w-full"
+        >
+          <div class="space-y-lg animate-fade-in">
+            <div
+              class="inline-flex items-center gap-sm px-md py-xs bg-primary-fixed rounded-full border border-primary/20"
+            >
+              <span
+                class="w-2 h-2 rounded-full bg-primary animate-pulse"
+              ></span>
+              <span class="font-mono-label text-mono-label text-primary"
+                >Web3 Voting v2.0</span
+              >
+            </div>
+            <h1
+              class="font-display-lg text-display-lg text-on-surface tracking-tight leading-tight"
+            >
+              Hệ thống bỏ phiếu điện tử ứng dụng
+              <span class="text-primary">Blockchain</span>
+            </h1>
+            <p
+              class="font-body-lg text-body-lg text-on-surface-variant max-w-lg"
+            >
+              Bầu cử minh bạch, an toàn và không thể thay đổi nhờ công nghệ
+              Blockchain. Trải nghiệm nền tảng quản trị cộng đồng tối tân nhất
+              hiện nay.
+            </p>
+            <div class="flex flex-col sm:flex-row items-center gap-md pt-md">
+              <button
+                id="connect-wallet-btn-hero"
+                class="bv-connect-btn w-full sm:w-auto bg-primary text-on-primary font-label-md text-label-md px-xl py-md rounded-xl shadow-lg hover:shadow-primary/20 transition-all active:scale-95 flex items-center justify-center gap-sm"
+              >
+                <span
+                  class="material-symbols-outlined"
+                  style="font-variation-settings: &quot;FILL&quot; 1"
+                  >how_to_vote</span
+                >
+                <span class="bv-connect-btn-label">Bắt đầu ngay</span>
+              </button>
+              <button
+                class="w-full sm:w-auto border border-outline text-on-surface font-label-md text-label-md px-xl py-md rounded-xl hover:bg-surface-container transition-all active:scale-95"
+              >
+                Tìm hiểu thêm
+              </button>
+            </div>
+            <div
+              class="flex items-center gap-xl pt-lg border-t border-outline-variant/30"
+            >
+              <div>
+                <p class="font-headline-md text-headline-md text-on-surface">
+                  1M+
+                </p>
+                <p class="font-body-sm text-body-sm text-on-surface-variant">
+                  Phiếu bầu
+                </p>
+              </div>
+              <div>
+                <p class="font-headline-md text-headline-md text-on-surface">
+                  500+
+                </p>
+                <p class="font-body-sm text-body-sm text-on-surface-variant">
+                  Tổ chức DAO
+                </p>
+              </div>
+              <div>
+                <p class="font-headline-md text-headline-md text-on-surface">
+                  100%
+                </p>
+                <p class="font-body-sm text-body-sm text-on-surface-variant">
+                  Minh bạch
+                </p>
+              </div>
+            </div>
+          </div>
+          <div class="relative hidden lg:block">
+            <!-- Main Hero Image -->
+            <div
+              class="relative z-10 p-md rounded-[2.5rem] bg-gradient-to-br from-white to-surface-container-low shadow-2xl rotate-2"
+            >
+              <img
+                class="rounded-[2rem] w-full h-[500px] object-cover"
+                data-alt="A clean, high-tech digital 3D illustration of a floating blockchain node crystal with glowing indigo connections. The scene is set in a bright, minimalist space with soft ambient lighting and deep shadows, reflecting a professional corporate aesthetic. Geometric patterns and subtle data streams flow in the background, reinforcing themes of security and transparency."
+                src="https://lh3.googleusercontent.com/aida-public/AB6AXuAfjXwTNDgdW_IxphQfsvT1xtJdQb6lIlSHaYJC1GlMl2i0THROHrDX1Y5BBbTB7W5mn29VFHrFGPuzWIU7WRR3W7XrDr34CoUx8q7BgVM5MQvS345ArOUba1_DVNgGIEcil8Omwdp_gaFswFcgLeLjVgGFMXaC-TuFjBPTWhcBa-b1zYc90avGGi9oN8DZSDB1O-n8s8kFTlbTQeNsTGxjVXg6BXqy1u_48qdINO2MrhaT59rC0Ztk_hDzgAkpAQ-6k7h7F_WY1OI"
+              />
+              <!-- Floating Card 1 -->
+              <div
+                class="absolute -left-12 top-24 glass-card p-md rounded-xl shadow-xl animate-bounce-slow max-w-[200px]"
+              >
+                <div class="flex items-center gap-sm mb-xs">
+                  <span class="material-symbols-outlined text-primary"
+                    >verified</span
+                  >
+                  <span class="font-label-md text-label-md">Đã xác thực</span>
+                </div>
+                <p class="font-body-sm text-body-sm">
+                  Kết quả bầu cử được ghi lại vĩnh viễn trên On-chain.
+                </p>
+              </div>
+              <!-- Floating Card 2 -->
+              <div
+                class="absolute -right-8 bottom-12 bg-primary-container p-md rounded-xl shadow-xl text-on-primary max-w-[220px]"
+              >
+                <div class="flex items-center justify-between mb-sm">
+                  <span class="font-label-md text-label-md"
+                    >Tỷ lệ biểu quyết</span
+                  >
+                  <span class="font-mono-label text-mono-label">84%</span>
+                </div>
+                <div
+                  class="w-full bg-white/20 h-2 rounded-full overflow-hidden"
+                >
+                  <div class="bg-white h-full w-[84%]"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+      <!-- Features Section -->
+      <section class="py-xl bg-surface">
+        <div class="max-w-container-max mx-auto px-md">
+          <div class="text-center mb-xl space-y-md">
+            <p
+              class="font-label-md text-label-md text-primary tracking-widest uppercase"
+            >
+              Tại sao chọn chúng tôi
+            </p>
+            <h2 class="font-headline-lg text-headline-lg text-on-surface">
+              Công nghệ dẫn đầu sự tin cậy
+            </h2>
+            <p
+              class="font-body-md text-body-md text-on-surface-variant max-w-2xl mx-auto"
+            >
+              Chúng tôi giải quyết các vấn đề cốt lõi của bầu cử truyền thống
+              thông qua sức mạnh của hợp đồng thông minh.
+            </p>
+          </div>
+          <div class="grid md:grid-cols-3 gap-lg">
+            <!-- Feature 1: Minh bạch -->
+            <div
+              class="group p-lg bg-white rounded-3xl border border-outline-variant hover:border-primary/50 hover:shadow-2xl hover:shadow-primary/5 transition-all duration-300"
+            >
+              <div
+                class="w-14 h-14 rounded-2xl bg-primary-fixed flex items-center justify-center text-primary mb-lg group-hover:scale-110 transition-transform"
+              >
+                <span class="material-symbols-outlined text-[32px]"
+                  >visibility</span
+                >
+              </div>
+              <h3
+                class="font-headline-md text-headline-md text-on-surface mb-sm"
+              >
+                Minh bạch
+              </h3>
+              <p
+                class="font-body-md text-body-md text-on-surface-variant leading-relaxed"
+              >
+                Mọi phiếu bầu đều có thể được kiểm toán công khai bởi bất kỳ ai
+                thông qua trình khám phá khối. Không còn sự mờ ám trong kiểm
+                phiếu.
+              </p>
+            </div>
+            <!-- Feature 2: Bảo mật -->
+            <div
+              class="group p-lg bg-white rounded-3xl border border-outline-variant hover:border-primary/50 hover:shadow-2xl hover:shadow-primary/5 transition-all duration-300"
+            >
+              <div
+                class="w-14 h-14 rounded-2xl bg-secondary-fixed flex items-center justify-center text-secondary mb-lg group-hover:scale-110 transition-transform"
+              >
+                <span class="material-symbols-outlined text-[32px]"
+                  >security</span
+                >
+              </div>
+              <h3
+                class="font-headline-md text-headline-md text-on-surface mb-sm"
+              >
+                Bảo mật
+              </h3>
+              <p
+                class="font-body-md text-body-md text-on-surface-variant leading-relaxed"
+              >
+                Sử dụng mã hóa bất đối xứng để đảm bảo danh tính cử tri được bảo
+                vệ nhưng tính hợp lệ của phiếu bầu vẫn được duy trì.
+              </p>
+            </div>
+            <!-- Feature 3: Không thể chỉnh sửa -->
+            <div
+              class="group p-lg bg-white rounded-3xl border border-outline-variant hover:border-primary/50 hover:shadow-2xl hover:shadow-primary/5 transition-all duration-300"
+            >
+              <div
+                class="w-14 h-14 rounded-2xl bg-tertiary-fixed flex items-center justify-center text-tertiary mb-lg group-hover:scale-110 transition-transform"
+              >
+                <span class="material-symbols-outlined text-[32px]"
+                  >history_edu</span
+                >
+              </div>
+              <h3
+                class="font-headline-md text-headline-md text-on-surface mb-sm"
+              >
+                Bất biến
+              </h3>
+              <p
+                class="font-body-md text-body-md text-on-surface-variant leading-relaxed"
+              >
+                Một khi dữ liệu đã được ghi vào chuỗi khối, không một thế lực
+                nào có thể thay đổi hoặc xóa bỏ kết quả đã được xác lập.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+      <!-- Simple Trust Bar -->
+      <section class="py-lg border-y border-outline-variant/30">
+        <div class="max-w-container-max mx-auto px-md overflow-hidden">
+          <div
+            class="flex items-center justify-center gap-xl md:gap-[100px] grayscale opacity-50 flex-wrap"
+          >
+            <span
+              class="font-headline-md text-headline-md font-bold tracking-tighter"
+              >ETHEREUM</span
+            >
+            <span
+              class="font-headline-md text-headline-md font-bold tracking-tighter"
+              >POLYGON</span
+            >
+            <span
+              class="font-headline-md text-headline-md font-bold tracking-tighter"
+              >METAMASK</span
+            >
+            <span
+              class="font-headline-md text-headline-md font-bold tracking-tighter"
+              >CHAINLINK</span
+            >
+          </div>
+        </div>
+      </section>
+      <!-- CTA Section -->
+      <section class="py-xl">
+        <div class="max-w-container-max mx-auto px-md">
+          <div
+            class="relative bg-inverse-surface rounded-[3rem] p-xl overflow-hidden text-center"
+          >
+            <div class="relative z-10 space-y-lg">
+              <h2
+                class="font-display-lg text-display-lg text-inverse-on-surface max-w-3xl mx-auto"
+              >
+                Sẵn sàng để kiến tạo tương lai phi tập trung?
+              </h2>
+              <p
+                class="font-body-lg text-body-lg text-surface-variant/80 max-w-xl mx-auto"
+              >
+                Kết nối ví ngay để tham gia vào các cuộc bầu cử quan trọng trong
+                cộng đồng của bạn.
+              </p>
+              <button
+                id="connect-wallet-btn-cta"
+                class="bv-connect-btn bg-primary-fixed text-on-primary-fixed font-label-md text-label-md px-xl py-md rounded-xl hover:bg-white transition-all active:scale-95 shadow-xl"
+              >
+                <span class="bv-connect-btn-label"
+                  >Kết nối ví MetaMask của bạn</span
+                >
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+    <!-- Simple Footer -->
+    <footer
+      class="bg-surface-container-low py-lg border-t border-outline-variant"
+    >
+      <div
+        class="max-w-container-max mx-auto px-md flex flex-col md:flex-row justify-between items-center gap-md"
+      >
+        <div class="flex flex-col gap-sm">
+          <span class="font-headline-md text-headline-md font-bold text-primary"
+            >Blockchain Voting</span
+          >
+          <p class="font-body-sm text-body-sm text-on-surface-variant">
+            © 2024 Blockchain Voting System. Bảo lưu mọi quyền.
+          </p>
+        </div>
+        <div class="flex items-center gap-lg">
+          <a
+            class="font-label-md text-label-md text-on-surface-variant hover:text-primary transition-colors"
+            href="../auth/connect-wallet.html"
+            >Điều khoản</a
+          >
+          <a
+            class="font-label-md text-label-md text-on-surface-variant hover:text-primary transition-colors"
+            href="../voting/vote-results.html"
+            >Bảo mật</a
+          >
+          <a
+            class="font-label-md text-label-md text-on-surface-variant hover:text-primary transition-colors"
+            href="../voting/vote-history.html"
+            >Liên hệ</a
+          >
+        </div>
+        <div class="flex items-center gap-md">
+          <a
+            class="w-10 h-10 rounded-full bg-surface-container flex items-center justify-center hover:bg-primary hover:text-white transition-all"
+            href="../auth/connect-wallet.html"
+          >
+            <span class="material-symbols-outlined text-[20px]">language</span>
+          </a>
+          <a
+            class="w-10 h-10 rounded-full bg-surface-container flex items-center justify-center hover:bg-primary hover:text-white transition-all"
+            href="../voting/vote-results.html"
+          >
+            <span class="material-symbols-outlined text-[20px]">hub</span>
+          </a>
+        </div>
+      </div>
+    </footer>
+
+    <!-- Toast thông báo (kết nối ví / lỗi / vai trò) -->
+    <div
+      id="bv-toast"
+      class="hidden fixed bottom-6 right-6 z-[100] max-w-sm px-lg py-md rounded-xl shadow-lg font-body-sm text-body-sm border transition-all duration-300 translate-y-2 opacity-0"
+      role="status"
+    ></div>
+
+    <script src="../../JS/home.js" defer></script>
+  </body>
+</html>
