@@ -400,6 +400,32 @@
       role="status"
     ></div>
 
+    <!-- Script cho trang Home -->
     <script src="../../JS/home.js" defer></script>
+    <script src="../../JS/tailwind.js" defer></script>
+    <script src="../../JS/blockchain.js" defer></script>
+    <script>
+      // Kết nối các nút trên trang home
+      document.addEventListener("DOMContentLoaded", () => {
+        const heroBtn = document.getElementById("connect-wallet-btn-hero");
+        const navBtn = document.getElementById("connect-wallet-btn-nav");
+
+        const handleConnect = async () => {
+          if (
+            typeof window.connectWalletPage !== "undefined" &&
+            window.connectWalletPage.handleConnectClick
+          ) {
+            await window.connectWalletPage.handleConnectClick();
+          } else {
+            // Fallback nếu chưa import
+            alert("Vui lòng chuyển sang trang Connect Wallet trước.");
+            window.location.href = "../auth/connect-wallet.html";
+          }
+        };
+
+        if (heroBtn) heroBtn.addEventListener("click", handleConnect);
+        if (navBtn) navBtn.addEventListener("click", handleConnect);
+      });
+    </script>
   </body>
 </html>

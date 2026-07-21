@@ -145,9 +145,9 @@
           <div class="grid grid-cols-2 gap-md">
             <button
               onclick="disconnectWallet()"
-              class="py-sm px-md border border-error text-error font-label-md text-label-md rounded-lg hover:bg-error-container transition-colors"
+              class="mt-4 w-full py-2 px-4 border border-red-300 text-red-600 rounded-xl hover:bg-red-50 transition-all"
             >
-              Ngắt kết nối
+              Ngắt kết nối ví
             </button>
             <button
               onclick="continueToDashboard()"
@@ -170,6 +170,7 @@
       >
     </footer>
 
-    <script src="../../JS/connect-wallet.js" defer></script>
+    <script src="../../JS/connect-wallet.js" type="module" defer></script>
+    <script src="../../JS/tailwind.js" defer></script>
   </body>
 </html>
