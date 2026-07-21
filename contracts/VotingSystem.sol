@@ -34,7 +34,6 @@ contract VotingSystem {
         address wallet;
         bool verified;
         bool active;
-        bool voted;
     }
 
     mapping(address => VoterInfo) public voters;
@@ -56,7 +55,7 @@ contract VotingSystem {
         require(voters[_wallet].wallet == address(0), "Vi nay da duoc dang ky");
 
         uint256 id = voterList.length;
-        voters[_wallet] = VoterInfo(id, _fullName, _wallet, false, true, false);
+        voters[_wallet] = VoterInfo(id, _fullName, _wallet, false, true);
         voterList.push(_wallet);
 
         emit VoterRegistered(_wallet, _fullName);
@@ -100,14 +99,17 @@ contract VotingSystem {
         return voters[_wallet].active;
     }
 
-    function hasVoted(address _wallet) public view returns (bool) {
-        return voters[_wallet].voted;
-    }
 
     // ============================
     // ELECTION
     // ============================
-    enum ElectionStatus { Pending, Registration, Verification, Voting, Ended }
+    enum ElectionStatus {
+        Pending,
+        Registration,
+        Verification,
+        Voting,
+        Ended
+    }
 
     struct ElectionData {
         uint256 id;
@@ -119,7 +121,7 @@ contract VotingSystem {
     }
 
     mapping(uint256 => ElectionData) public elections;
-    uint256 public electionCount;
+    uint256 public electionCount;   
 
     event ElectionCreated(uint256 indexed electionId, string title);
     event ElectionStatusChanged(uint256 indexed electionId, ElectionStatus status);
@@ -181,7 +183,10 @@ contract VotingSystem {
     }
 
     mapping(uint256 => CandidateData) public candidates;
+    mapping(uint256 => uint256[]) public electionCandidates;
+
     mapping(address => bool) public candidateWallets;
+
     uint256 public candidateCount;
 
     event CandidateAdded(uint256 indexed candidateId, string fullName);
@@ -192,13 +197,39 @@ contract VotingSystem {
         _;
     }
 
-    function addCandidate(string memory _fullName, address _wallet, string memory _description) public onlyOwner {
+    function addCandidate(
+        uint256 _electionId,
+        string memory _fullName,
+        address _wallet,
+        string memory _description
+    )
+        public
+        onlyOwner
+        electionExists(_electionId)
+    {
+        require(
+            elections[_electionId].status == ElectionStatus.Registration ||
+            elections[_electionId].status == ElectionStatus.Pending,
+            "Khong the them ung vien o giai doan nay"
+        );
+
         require(bytes(_fullName).length > 0, "Ten ung vien khong duoc de trong");
         require(_wallet != address(0), "Dia chi vi khong hop le");
         require(!candidateWallets[_wallet], "Wallet da duoc su dung");
+        
 
         uint256 id = candidateCount++;
-        candidates[id] = CandidateData(id, _fullName, _wallet, _description, 0, false);
+
+        candidates[id] = CandidateData(
+            id,
+            _fullName,
+            _wallet,
+            _description,
+            0,
+            false
+        );
+
+        electionCandidates[_electionId].push(id);
         candidateWallets[_wallet] = true;
 
         emit CandidateAdded(id, _fullName);
@@ -225,45 +256,105 @@ contract VotingSystem {
         }
         return all;
     }
+    function isCandidateInElection(
+        uint256 _electionId,
+        uint256 _candidateId
+    ) public view returns (bool) {
+        uint256[] memory candidateIds = electionCandidates[_electionId];
+
+        for (uint256 i = 0; i < candidateIds.length; i++) {
+            if (candidateIds[i] == _candidateId) {
+                return true;
+            }
+        }
+
+        return false;
+    }
 
     // ============================
     // VOTING
     // ============================
+    mapping(uint256 => mapping(address => bool)) public hasVoted;
+
     event VoteCast(uint256 indexed electionId, uint256 indexed candidateId, address voter);
 
-    function vote(uint256 _electionId, uint256 _candidateId) public {
+    function vote(
+        uint256 _electionId,
+        uint256 _candidateId
+    )
+        public
+    {
         require(_electionId < electionCount, "Election khong ton tai");
         require(_candidateId < candidateCount, "Ung vien khong ton tai");
-        require(voters[msg.sender].verified, "Chua duoc xac thuc");
-        require(voters[msg.sender].active, "Cu tri bi khoa");
-        require(!voters[msg.sender].voted, "Da bo phieu roi");
-        require(elections[_electionId].status == ElectionStatus.Voting, "Khong phai giai doan bo phieu");
-        require(candidates[_candidateId].verified, "Ung vien chua duoc xac thuc");
+        require(isCandidateInElection(_electionId, _candidateId), "Ung vien khong thuoc cuoc bau cu nay");
+
+        require(
+            voters[msg.sender].verified,
+            "Chua duoc xac thuc"
+        );
+
+        require(
+            voters[msg.sender].active,
+            "Cu tri bi khoa"
+        );
+
+        require(
+            !hasVoted[_electionId][msg.sender],
+            "Ban da bo phieu trong cuoc bau cu nay"
+        );
+
+        require(
+            elections[_electionId].status == ElectionStatus.Voting,
+            "Khong phai giai doan bo phieu"
+        );
+
+        require(
+            candidates[_candidateId].verified,
+            "Ung vien chua duoc xac thuc"
+        );
 
         increaseVote(_candidateId);
-        voters[msg.sender].voted = true;
 
-        emit VoteCast(_electionId, _candidateId, msg.sender);
+        hasVoted[_electionId][msg.sender] = true;
+
+        emit VoteCast(
+            _electionId,
+            _candidateId,
+            msg.sender
+        );
     }
 
     // ============================
     // RESULT
     // ============================
-    function getWinner() public view returns (uint256 winnerId, uint256 maxVotes) {
-        maxVotes = 0;
-        for (uint256 i = 0; i < candidateCount; i++) {
-            if (candidates[i].voteCount > maxVotes) {
-                maxVotes = candidates[i].voteCount;
-                winnerId = i;
+    function getWinner(uint256 _electionId)
+        public
+        view
+        electionExists(_electionId)
+        returns (uint256 winnerId, uint256 maxVotes)
+    {
+        uint256[] memory candidateIds = electionCandidates[_electionId];
+
+        for (uint256 i = 0; i < candidateIds.length; i++) {
+            uint256 candidateId = candidateIds[i];
+
+            if (candidates[candidateId].voteCount > maxVotes) {
+                maxVotes = candidates[candidateId].voteCount;
+                winnerId = candidateId;
             }
         }
     }
 
-    function totalVotes() public view returns (uint256) {
-        uint256 total = 0;
-        for (uint256 i = 0; i < candidateCount; i++) {
-            total += candidates[i].voteCount;
+    function totalVotes(uint256 _electionId)
+        public
+        view
+        electionExists(_electionId)
+        returns (uint256 total)
+    {
+        uint256[] memory candidateIds = electionCandidates[_electionId];
+
+        for (uint256 i = 0; i < candidateIds.length; i++) {
+            total += candidates[candidateIds[i]].voteCount;
         }
-        return total;
     }
 }
