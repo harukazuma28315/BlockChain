@@ -109,211 +109,37 @@ tailwind.config = {
 };
 
 /* =========================================================================
-   BVStore — Lớp lưu trữ dữ liệu mô phỏng (localStorage) dùng chung cho toàn
-   bộ khu vực Admin. Trong bản demo này dữ liệu được lưu tại trình duyệt để
-   mô phỏng trạng thái Smart Contract (cử tri, ứng viên, cuộc bầu cử, giao
-   dịch on-chain). Khi tích hợp thật, các hàm bên dưới chỉ cần thay bằng lời
-   gọi ethers.js tới Smart Contract đã deploy trên Ganache.
+   TRANG QUẢN LÝ ỨNG VIÊN — tích hợp ethers.js
+   Thêm ứng viên (addCandidate) vào cuộc bầu cử hiện hành, Xác thực ứng viên
+   (verifyCandidate). Contract không hỗ trợ sửa/xóa ứng viên nên các thao
+   tác này không còn xuất hiện trên giao diện.
    ========================================================================= */
-const BV_KEY = "bv_voting_data";
-// Địa chỉ ví được cấp quyền Admin (demo). Khi kết nối MetaMask, nếu địa chỉ
-// trùng khớp (không phân biệt hoa/thường) thì tài khoản được coi là Admin.
-const BV_ADMIN_ADDRESS = "0xa1b517e141F6d7BE60555dfaBCf27Fdc536C20AA";
+import {
+  initAdminPage,
+  getContract,
+  guardAdmin,
+  shortAddr,
+  fetchCandidates,
+  fetchCurrentElection,
+} from "./admin-common.js";
 
-function bvDefaultData() {
-  return {
-    admin: { address: null, connected: false, isAdmin: false },
-    election: {
-      name: "Bầu cử Hội đồng DAO 2025",
-      description:
-        "Quyết định về việc tài trợ 50,000 USDT cho các dự án Web3 tiềm năng.",
-      startDate: "",
-      endDate: "",
-      // draft -> registration -> verification -> voting -> ended
-      status: "draft",
-    },
-    voters: [
-      {
-        address: "0x82a1f0a1f0a1f0a1f0a1f0a1f0a1f0a1f0a1f0a1",
-        name: "Cử tri 1",
-        verified: false,
-        locked: false,
-        addedAt: Date.now(),
-      },
-      {
-        address: "0x91b3e291b3e291b3e291b3e291b3e291b3e291b3",
-        name: "Cử tri 2",
-        verified: false,
-        locked: false,
-        addedAt: Date.now(),
-      },
-    ],
-    candidates: [
-      {
-        id: 1,
-        name: "Ứng viên 1",
-        wallet: "0x55c29a4155c29a4155c29a4155c29a4155c29a4",
-        desc: "Đại diện cộng đồng DAO với kinh nghiệm quản lý quỹ đầu tư số.",
-        votes: 0,
-        verified: false,
-      },
-      {
-        id: 2,
-        name: "Ứng viên 2",
-        wallet: "0x12b3ff5412b3ff5412b3ff5412b3ff5412b3ff54",
-        desc: "Chuyên gia công nghệ blockchain, nhiều năm phát triển hợp đồng thông minh.",
-        votes: 0,
-        verified: false,
-      },
-    ],
-    transactions: [],
-  };
-}
+let cachedCandidates = [];
+let currentElection = null;
 
-function bvLoad() {
-  try {
-    const raw = localStorage.getItem(BV_KEY);
-    if (!raw) {
-      const init = bvDefaultData();
-      localStorage.setItem(BV_KEY, JSON.stringify(init));
-      return init;
-    }
-    return JSON.parse(raw);
-  } catch (e) {
-    const init = bvDefaultData();
-    localStorage.setItem(BV_KEY, JSON.stringify(init));
-    return init;
+async function loadCandidates() {
+  const contract = getContract();
+  if (!contract) {
+    cachedCandidates = [];
+    currentElection = null;
+    return;
   }
+  [cachedCandidates, currentElection] = await Promise.all([
+    fetchCandidates(contract),
+    fetchCurrentElection(contract),
+  ]);
 }
 
-function bvSave(data) {
-  localStorage.setItem(BV_KEY, JSON.stringify(data));
-}
-
-function bvShortAddr(addr) {
-  if (!addr) return "";
-  return addr.slice(0, 6) + "..." + addr.slice(-4);
-}
-
-function bvNow() {
-  return new Date().toLocaleString("vi-VN");
-}
-
-// Ghi lại một "giao dịch" on-chain mô phỏng, dùng cho trang Lịch sử Blockchain
-function bvAddTransaction(data, type, wallet, status) {
-  const tx = {
-    hash:
-      "0x" +
-      Array.from(
-        { length: 64 },
-        () => "0123456789abcdef"[Math.floor(Math.random() * 16)],
-      ).join(""),
-    wallet: wallet || data.admin.address || BV_ADMIN_ADDRESS,
-    block: 18200000 + Math.floor(Math.random() * 9999),
-    time: bvNow(),
-    status: status || "success",
-    type: type,
-  };
-  data.transactions.unshift(tx);
-  bvSave(data);
-  return tx;
-}
-
-/* ============================ Kết nối MetaMask ========================== */
-async function bvConnectWallet() {
-  const data = bvLoad();
-  if (typeof window.ethereum === "undefined") {
-    alert(
-      "Không tìm thấy MetaMask. Vui lòng cài đặt tiện ích MetaMask và kết nối với mạng Ganache để tiếp tục.",
-    );
-    return null;
-  }
-  try {
-    const accounts = await window.ethereum.request({
-      method: "eth_requestAccounts",
-    });
-    const address = accounts[0];
-    data.admin.address = address;
-    data.admin.connected = true;
-    data.admin.isAdmin =
-      address.toLowerCase() === BV_ADMIN_ADDRESS.toLowerCase();
-    bvSave(data);
-    bvRenderWallet(data);
-    bvGuardAdmin(data);
-    if (data.admin.isAdmin) {
-      bvAddTransaction(data, "Kết nối ví Admin", address, "success");
-    }
-    return data.admin;
-  } catch (err) {
-    console.error("Kết nối ví thất bại:", err);
-    alert("Kết nối ví thất bại hoặc bị từ chối. Vui lòng thử lại.");
-    return null;
-  }
-}
-
-// Hiển thị trạng thái ví lên header (áp dụng cho mọi trang admin)
-function bvRenderWallet(data) {
-  const addrEl = document.getElementById("wallet-address");
-  const statusEl = document.getElementById("wallet-status");
-  const badgeEl = document.getElementById("wallet-badge");
-  const connectBtn = document.getElementById("connect-wallet-btn");
-
-  if (addrEl) {
-    addrEl.textContent = data.admin.connected
-      ? bvShortAddr(data.admin.address)
-      : "Chưa kết nối";
-  }
-  if (statusEl) {
-    if (data.admin.connected && data.admin.isAdmin) {
-      statusEl.textContent = "Connected (Admin)";
-      statusEl.className = "text-[11px] text-emerald-600 font-medium";
-    } else if (data.admin.connected && !data.admin.isAdmin) {
-      statusEl.textContent = "Ví không có quyền Admin";
-      statusEl.className = "text-[11px] text-error font-medium";
-    } else {
-      statusEl.textContent = "Chưa kết nối";
-      statusEl.className = "text-[11px] text-on-surface-variant font-medium";
-    }
-  }
-  if (badgeEl) {
-    badgeEl.classList.toggle("opacity-50", !data.admin.connected);
-  }
-  if (connectBtn) {
-    connectBtn.textContent = data.admin.connected
-      ? bvShortAddr(data.admin.address)
-      : "Kết nối ví Admin";
-  }
-}
-
-// Chặn thao tác nếu ví chưa kết nối / không có quyền Admin
-function bvGuardAdmin(data) {
-  const warningEl = document.getElementById("admin-guard-warning");
-  const isOk = data.admin.connected && data.admin.isAdmin;
-  if (warningEl) warningEl.classList.toggle("hidden", isOk);
-  document.querySelectorAll("[data-admin-only]").forEach((el) => {
-    el.disabled = !isOk;
-    el.classList.toggle("opacity-50", !isOk);
-    el.classList.toggle("cursor-not-allowed", !isOk);
-  });
-  return isOk;
-}
-
-document.addEventListener("DOMContentLoaded", () => {
-  const data = bvLoad();
-  bvRenderWallet(data);
-  bvGuardAdmin(data);
-  const connectBtn = document.getElementById("connect-wallet-btn");
-  if (connectBtn) connectBtn.addEventListener("click", bvConnectWallet);
-});
-
-/* ======================== Trang Quản lý ứng viên ===========================
-   Chức năng: Thêm ứng viên, Chỉnh sửa, Xóa, Xác thực ứng viên.
-   ========================================================================= */
-
-let bvEditingCandidateId = null;
-
-function bvRenderCandidates() {
-  const data = bvLoad();
+function renderCandidates() {
   const tbody = document.getElementById("candidates-table-body");
   const emptyState = document.getElementById("candidates-empty-state");
   if (!tbody) return;
@@ -321,15 +147,15 @@ function bvRenderCandidates() {
   const term = (document.getElementById("candidate-search")?.value || "")
     .toLowerCase()
     .trim();
-  const filtered = data.candidates.filter(
+  const filtered = cachedCandidates.filter(
     (c) =>
       c.name.toLowerCase().includes(term) ||
       c.wallet.toLowerCase().includes(term),
   );
 
-  document.getElementById("candidates-count") &&
-    (document.getElementById("candidates-count").textContent =
-      `Hiển thị ${filtered.length} trên tổng số ${data.candidates.length} ứng viên`);
+  const countEl = document.getElementById("candidates-count");
+  if (countEl)
+    countEl.textContent = `Hiển thị ${filtered.length} trên tổng số ${cachedCandidates.length} ứng viên`;
 
   if (emptyState) emptyState.classList.toggle("hidden", filtered.length > 0);
 
@@ -344,7 +170,7 @@ function bvRenderCandidates() {
           </div>
           <div>
             <p class="font-label-md text-label-md text-on-surface">${c.name}</p>
-            <p class="font-body-sm text-body-sm text-on-surface-variant italic">${bvShortAddr(c.wallet)}</p>
+            <p class="font-body-sm text-body-sm text-on-surface-variant italic">${shortAddr(c.wallet)}</p>
           </div>
         </div>
       </td>
@@ -366,49 +192,42 @@ function bvRenderCandidates() {
             title="Xác thực ứng viên">
             <span class="material-symbols-outlined">verified</span>
           </button>
-          <button data-admin-only onclick="bvOpenEditCandidate(${c.id})"
-            class="p-sm text-on-surface-variant hover:text-primary hover:bg-primary-fixed rounded-lg transition-all" title="Sửa">
-            <span class="material-symbols-outlined">edit</span>
-          </button>
-          <button data-admin-only onclick="bvDeleteCandidate(${c.id})"
-            class="p-sm text-on-surface-variant hover:text-error hover:bg-error-container rounded-lg transition-all" title="Xóa">
-            <span class="material-symbols-outlined">delete</span>
-          </button>
         </div>
       </td>
     </tr>`,
     )
     .join("");
 
-  bvGuardAdmin(data);
+  guardAdmin();
 }
 
-function bvOpenAddCandidate() {
-  bvEditingCandidateId = null;
-  document.getElementById("candidate-modal-title").textContent =
-    "Thêm ứng viên mới";
-  document.getElementById("add-candidate-form").reset();
+async function refreshAndRender() {
+  const tbody = document.getElementById("candidates-table-body");
+  if (tbody) {
+    tbody.innerHTML = `<tr><td colspan="5" class="px-lg py-lg text-center text-on-surface-variant font-body-sm text-body-sm">Đang tải dữ liệu từ blockchain...</td></tr>`;
+  }
+  await loadCandidates();
+  renderCandidates();
+}
+
+window.bvOpenAddCandidate = function () {
+  const titleEl = document.getElementById("candidate-modal-title");
+  if (titleEl) titleEl.textContent = "Thêm ứng viên mới";
+  document.getElementById("add-candidate-form")?.reset();
   bvToggleModal("add-candidate-modal");
-}
+};
 
-function bvOpenEditCandidate(id) {
-  const data = bvLoad();
-  const candidate = data.candidates.find((c) => c.id === id);
-  if (!candidate) return;
-  bvEditingCandidateId = id;
-  document.getElementById("candidate-modal-title").textContent =
-    "Chỉnh sửa ứng viên";
-  document.getElementById("candidate-name-input").value = candidate.name;
-  document.getElementById("candidate-wallet-input").value = candidate.wallet;
-  document.getElementById("candidate-desc-input").value = candidate.desc;
-  bvToggleModal("add-candidate-modal");
-}
-
-function bvSaveCandidate(event) {
+async function bvSaveCandidate(event) {
   event.preventDefault();
-  const data = bvLoad();
-  if (!bvGuardAdmin(data)) {
+  const contract = getContract();
+  if (!guardAdmin() || !contract) {
     alert("Bạn cần kết nối ví Admin để thực hiện thao tác này.");
+    return;
+  }
+  if (!currentElection) {
+    alert(
+      "Chưa có cuộc bầu cử nào được tạo. Vui lòng tạo cuộc bầu cử ở trang Quản lý bầu cử trước.",
+    );
     return;
   }
   const name = document.getElementById("candidate-name-input").value.trim();
@@ -418,72 +237,33 @@ function bvSaveCandidate(event) {
     alert("Vui lòng nhập đầy đủ Tên ứng viên và Địa chỉ ví.");
     return;
   }
-  if (!/^0x[a-fA-F0-9]{6,64}$/.test(wallet)) {
-    alert("Địa chỉ ví không hợp lệ. Vui lòng nhập đúng định dạng 0x...");
+  if (!/^0x[a-fA-F0-9]{40}$/.test(wallet)) {
+    alert("Địa chỉ ví không hợp lệ. Vui lòng nhập đúng định dạng 0x... (40 ký tự hex).");
     return;
   }
-
-  if (bvEditingCandidateId) {
-    const candidate = data.candidates.find(
-      (c) => c.id === bvEditingCandidateId,
-    );
-    candidate.name = name;
-    candidate.wallet = wallet;
-    candidate.desc = desc;
-    bvAddTransaction(
-      data,
-      `Chỉnh sửa ứng viên: ${name}`,
-      data.admin.address,
-      "success",
-    );
-  } else {
-    const newId = data.candidates.length
-      ? Math.max(...data.candidates.map((c) => c.id)) + 1
-      : 1;
-    data.candidates.push({
-      id: newId,
-      name,
-      wallet,
-      desc,
-      votes: 0,
-      verified: false,
-    });
-    bvAddTransaction(
-      data,
-      `Thêm ứng viên: ${name}`,
-      data.admin.address,
-      "success",
-    );
+  try {
+    const tx = await contract.addCandidate(currentElection.id, name, wallet, desc);
+    await tx.wait();
+    bvToggleModal("add-candidate-modal");
+    await refreshAndRender();
+  } catch (err) {
+    console.error(err);
+    alert("Giao dịch thất bại: " + (err.reason || err.message || "Không xác định"));
   }
-  bvSave(data);
-  bvToggleModal("add-candidate-modal");
-  bvRenderCandidates();
 }
 
-function bvVerifyCandidate(id) {
-  const data = bvLoad();
-  if (!bvGuardAdmin(data)) return;
-  const candidate = data.candidates.find((c) => c.id === id);
-  candidate.verified = true;
-  bvAddTransaction(
-    data,
-    `Xác thực ứng viên: ${candidate.name}`,
-    data.admin.address,
-    "success",
-  );
-  bvSave(data);
-  bvRenderCandidates();
-}
-
-function bvDeleteCandidate(id) {
-  const data = bvLoad();
-  if (!bvGuardAdmin(data)) return;
-  const candidate = data.candidates.find((c) => c.id === id);
-  if (!confirm(`Xóa ứng viên "${candidate.name}" khỏi danh sách?`)) return;
-  data.candidates = data.candidates.filter((c) => c.id !== id);
-  bvSave(data);
-  bvRenderCandidates();
-}
+window.bvVerifyCandidate = async function (id) {
+  const contract = getContract();
+  if (!guardAdmin() || !contract) return;
+  try {
+    const tx = await contract.verifyCandidate(id);
+    await tx.wait();
+    await refreshAndRender();
+  } catch (err) {
+    console.error(err);
+    alert("Giao dịch thất bại: " + (err.reason || err.message || "Không xác định"));
+  }
+};
 
 function bvToggleModal(modalId) {
   const modal = document.getElementById(modalId);
@@ -503,23 +283,23 @@ function bvToggleModal(modalId) {
     setTimeout(() => modal.classList.add("hidden"), 300);
   }
 }
+window.bvToggleModal = bvToggleModal;
 
-document.addEventListener("DOMContentLoaded", () => {
-  bvRenderCandidates();
+document.addEventListener("DOMContentLoaded", async () => {
+  await initAdminPage((state) => {
+    if (state.connected) refreshAndRender();
+    else renderCandidates();
+  });
+
   const form = document.getElementById("add-candidate-form");
   if (form) form.addEventListener("submit", bvSaveCandidate);
   const search = document.getElementById("candidate-search");
-  if (search) search.addEventListener("input", bvRenderCandidates);
+  if (search) search.addEventListener("input", renderCandidates);
+
   document.querySelectorAll("button").forEach((button) => {
-    button.addEventListener("mousedown", () =>
-      button.classList.add("scale-95"),
-    );
-    button.addEventListener("mouseup", () =>
-      button.classList.remove("scale-95"),
-    );
-    button.addEventListener("mouseleave", () =>
-      button.classList.remove("scale-95"),
-    );
+    button.addEventListener("mousedown", () => button.classList.add("scale-95"));
+    button.addEventListener("mouseup", () => button.classList.remove("scale-95"));
+    button.addEventListener("mouseleave", () => button.classList.remove("scale-95"));
   });
 });
 

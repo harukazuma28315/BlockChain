@@ -3,6 +3,7 @@ import {
   connectWallet,
   disconnectWallet as blockchainDisconnect,
   addAccountChangeListener,
+  getUserRole,
 } from "../../JS/blockchain.js";
 
 // ====================== UI ELEMENTS ======================
@@ -39,12 +40,49 @@ async function handleConnectClick() {
 
   try {
     const data = await connectWallet();
+
     if (!data) {
       if (connectBtn) connectBtn.disabled = false;
       if (connectBtnLabel) connectBtnLabel.textContent = "Kết nối MetaMask";
       return;
     }
+
     showConnectedUI(data.address, data.isAdmin);
+
+    // Kiểm tra quyền
+    const role = await getUserRole();
+
+    switch (role) {
+      case "admin":
+        setTimeout(() => {
+          window.location.href = "../admin/admin-dashboard.html";
+        }, 800);
+        break;
+
+      case "voter":
+        setTimeout(() => {
+          window.location.href = "../voting/create-ballot.html";
+        }, 800);
+        break;
+
+      case "unverified":
+        alert("Bạn chưa được xác thực.");
+        connectBtn.disabled = false;
+        connectBtnLabel.textContent = "Kết nối MetaMask";
+        return;
+
+      case "disabled":
+        alert("Tài khoản đã bị khóa.");
+        connectBtn.disabled = false;
+        connectBtnLabel.textContent = "Kết nối MetaMask";
+        return;
+
+      default:
+        alert("Ví chưa được đăng ký.");
+        connectBtn.disabled = false;
+        connectBtnLabel.textContent = "Kết nối MetaMask";
+        return;
+    }
   } catch (error) {
     console.error(error);
     if (connectBtn) connectBtn.disabled = false;
@@ -70,15 +108,6 @@ function showConnectedUI(address, isAdminRole) {
 
   if (navAddress) navAddress.textContent = shortAddress;
   if (navWalletBadge) navWalletBadge.classList.remove("hidden");
-
-  // Tự động chuyển trang
-  setTimeout(() => {
-    if (isAdminRole) {
-      window.location.href = "../admin/admin-dashboard.html";
-    } else {
-      window.location.href = "../voting/create-ballot.html";
-    }
-  }, 800);
 }
 
 // ====================== INIT ======================
@@ -93,7 +122,20 @@ document.addEventListener("DOMContentLoaded", async () => {
       });
       if (accounts && accounts.length > 0) {
         const data = await connectWallet();
-        if (data) showConnectedUI(data.address, data.isAdmin);
+
+        if (data) {
+          showConnectedUI(data.address, data.isAdmin);
+
+          const role = await getUserRole();
+
+          if (role === "admin") {
+            location.href = "../admin/admin-dashboard.html";
+          }
+
+          if (role === "voter") {
+            location.href = "../voting/create-ballot.html";
+          }
+        }
       }
     } catch (e) {
       console.error(e);

@@ -51,6 +51,59 @@ export async function connectWallet() {
   }
 }
 
+export async function getUserRole() {
+  if (!contract || !currentAddress) return "guest";
+
+  // Admin
+  if (isAdminGlobal) {
+    return "admin";
+  }
+
+  // Voter
+  try {
+    const voter = await contract.getVoter(currentAddress);
+
+    if (!voter.verified) {
+      return "unverified";
+    }
+
+    if (!voter.active) {
+      return "disabled";
+    }
+
+    return "voter";
+  } catch {
+    return "guest";
+  }
+}
+
+export async function restoreWallet() {
+  if (!window.ethereum) return null;
+
+  provider = new ethers.BrowserProvider(window.ethereum);
+
+  const accounts = await provider.send("eth_accounts", []);
+
+  if (accounts.length === 0) return null;
+
+  signer = await provider.getSigner();
+
+  contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
+
+  currentAddress = (await signer.getAddress()).toLowerCase();
+
+  const owner = (await contract.owner()).toLowerCase();
+
+  isAdminGlobal = owner === currentAddress;
+
+  return {
+    address: currentAddress,
+    signer,
+    contract,
+    isAdmin: isAdminGlobal,
+  };
+}
+
 // ====================== DISCONNECT ======================
 export function disconnectWallet() {
   provider = signer = contract = null;
@@ -76,6 +129,12 @@ export function getCurrentAddress() {
 export function isAdmin() {
   return isAdminGlobal;
 }
+export function getProvider() {
+  return provider;
+}
+export function getSigner() {
+  return signer;
+}
 
 // ====================== LISTENER ======================
 export function addAccountChangeListener(callback) {
@@ -84,7 +143,7 @@ export function addAccountChangeListener(callback) {
   window.ethereum.on("accountsChanged", async (accounts) => {
     console.log("🔄 Account changed");
     if (accounts && accounts.length > 0) {
-      const data = await connectWallet();
+      const data = await restoreWallet();
       if (callback && data) callback(data);
     } else {
       disconnectWallet();

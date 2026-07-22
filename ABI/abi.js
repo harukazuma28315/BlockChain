@@ -1,5 +1,33 @@
 export const CONTRACT_ABI = [
   {
+    inputs: [
+      {
+        internalType: "uint256",
+        name: "_electionId",
+        type: "uint256",
+      },
+      {
+        internalType: "string",
+        name: "_fullName",
+        type: "string",
+      },
+      {
+        internalType: "address",
+        name: "_wallet",
+        type: "address",
+      },
+      {
+        internalType: "string",
+        name: "_description",
+        type: "string",
+      },
+    ],
+    name: "addCandidate",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
     inputs: [],
     stateMutability: "nonpayable",
     type: "constructor",
@@ -35,6 +63,55 @@ export const CONTRACT_ABI = [
     ],
     name: "CandidateVerified",
     type: "event",
+  },
+  {
+    inputs: [
+      {
+        internalType: "uint256",
+        name: "_electionId",
+        type: "uint256",
+      },
+      {
+        internalType: "enum VotingSystem.ElectionStatus",
+        name: "_status",
+        type: "uint8",
+      },
+    ],
+    name: "changeElectionStatus",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "string",
+        name: "_title",
+        type: "string",
+      },
+      {
+        internalType: "string",
+        name: "_description",
+        type: "string",
+      },
+    ],
+    name: "createElection",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "address",
+        name: "_wallet",
+        type: "address",
+      },
+    ],
+    name: "disableVoter",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
   },
   {
     anonymous: false,
@@ -75,6 +152,19 @@ export const CONTRACT_ABI = [
     type: "event",
   },
   {
+    inputs: [
+      {
+        internalType: "address",
+        name: "_wallet",
+        type: "address",
+      },
+    ],
+    name: "enableVoter",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
     anonymous: false,
     inputs: [
       {
@@ -92,6 +182,81 @@ export const CONTRACT_ABI = [
     ],
     name: "OwnershipTransferred",
     type: "event",
+  },
+  {
+    inputs: [
+      {
+        internalType: "string",
+        name: "_fullName",
+        type: "string",
+      },
+      {
+        internalType: "address",
+        name: "_wallet",
+        type: "address",
+      },
+    ],
+    name: "registerVoter",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "address",
+        name: "newOwner",
+        type: "address",
+      },
+    ],
+    name: "transferOwnership",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "uint256",
+        name: "_candidateId",
+        type: "uint256",
+      },
+    ],
+    name: "verifyCandidate",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "address",
+        name: "_wallet",
+        type: "address",
+      },
+    ],
+    name: "verifyVoter",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "uint256",
+        name: "_electionId",
+        type: "uint256",
+      },
+      {
+        internalType: "uint256",
+        name: "_candidateId",
+        type: "uint256",
+      },
+    ],
+    name: "vote",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
   },
   {
     anonymous: false,
@@ -177,34 +342,6 @@ export const CONTRACT_ABI = [
     type: "event",
   },
   {
-    inputs: [
-      {
-        internalType: "uint256",
-        name: "_electionId",
-        type: "uint256",
-      },
-      {
-        internalType: "string",
-        name: "_fullName",
-        type: "string",
-      },
-      {
-        internalType: "address",
-        name: "_wallet",
-        type: "address",
-      },
-      {
-        internalType: "string",
-        name: "_description",
-        type: "string",
-      },
-    ],
-    name: "addCandidate",
-    outputs: [],
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
     inputs: [],
     name: "candidateCount",
     outputs: [
@@ -212,25 +349,6 @@ export const CONTRACT_ABI = [
         internalType: "uint256",
         name: "",
         type: "uint256",
-      },
-    ],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
-        internalType: "address",
-        name: "",
-        type: "address",
-      },
-    ],
-    name: "candidateWallets",
-    outputs: [
-      {
-        internalType: "bool",
-        name: "",
-        type: "bool",
       },
     ],
     stateMutability: "view",
@@ -283,50 +401,20 @@ export const CONTRACT_ABI = [
   {
     inputs: [
       {
-        internalType: "uint256",
-        name: "_electionId",
-        type: "uint256",
-      },
-      {
-        internalType: "enum VotingSystem.ElectionStatus",
-        name: "_status",
-        type: "uint8",
-      },
-    ],
-    name: "changeElectionStatus",
-    outputs: [],
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
-        internalType: "string",
-        name: "_title",
-        type: "string",
-      },
-      {
-        internalType: "string",
-        name: "_description",
-        type: "string",
-      },
-    ],
-    name: "createElection",
-    outputs: [],
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
         internalType: "address",
-        name: "_wallet",
+        name: "",
         type: "address",
       },
     ],
-    name: "disableVoter",
-    outputs: [],
-    stateMutability: "nonpayable",
+    name: "candidateWallets",
+    outputs: [
+      {
+        internalType: "bool",
+        name: "",
+        type: "bool",
+      },
+    ],
+    stateMutability: "view",
     type: "function",
   },
   {
@@ -408,19 +496,6 @@ export const CONTRACT_ABI = [
       },
     ],
     stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
-        internalType: "address",
-        name: "_wallet",
-        type: "address",
-      },
-    ],
-    name: "enableVoter",
-    outputs: [],
-    stateMutability: "nonpayable",
     type: "function",
   },
   {
@@ -798,24 +873,6 @@ export const CONTRACT_ABI = [
     type: "function",
   },
   {
-    inputs: [
-      {
-        internalType: "string",
-        name: "_fullName",
-        type: "string",
-      },
-      {
-        internalType: "address",
-        name: "_wallet",
-        type: "address",
-      },
-    ],
-    name: "registerVoter",
-    outputs: [],
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
     inputs: [],
     name: "totalVoters",
     outputs: [
@@ -845,63 +902,6 @@ export const CONTRACT_ABI = [
       },
     ],
     stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
-        internalType: "address",
-        name: "newOwner",
-        type: "address",
-      },
-    ],
-    name: "transferOwnership",
-    outputs: [],
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
-        internalType: "uint256",
-        name: "_candidateId",
-        type: "uint256",
-      },
-    ],
-    name: "verifyCandidate",
-    outputs: [],
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
-        internalType: "address",
-        name: "_wallet",
-        type: "address",
-      },
-    ],
-    name: "verifyVoter",
-    outputs: [],
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
-        internalType: "uint256",
-        name: "_electionId",
-        type: "uint256",
-      },
-      {
-        internalType: "uint256",
-        name: "_candidateId",
-        type: "uint256",
-      },
-    ],
-    name: "vote",
-    outputs: [],
-    stateMutability: "nonpayable",
     type: "function",
   },
   {

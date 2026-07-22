@@ -109,209 +109,30 @@ tailwind.config = {
 };
 
 /* =========================================================================
-   BVStore — Lớp lưu trữ dữ liệu mô phỏng (localStorage) dùng chung cho toàn
-   bộ khu vực Admin. Trong bản demo này dữ liệu được lưu tại trình duyệt để
-   mô phỏng trạng thái Smart Contract (cử tri, ứng viên, cuộc bầu cử, giao
-   dịch on-chain). Khi tích hợp thật, các hàm bên dưới chỉ cần thay bằng lời
-   gọi ethers.js tới Smart Contract đã deploy trên Ganache.
+   TRANG QUẢN LÝ CỬ TRI — tích hợp ethers.js
+   Thêm cử tri (registerVoter), Xác thực (verifyVoter), Khóa/Mở quyền bỏ
+   phiếu (disableVoter/enableVoter). Dữ liệu đọc trực tiếp từ Smart Contract.
    ========================================================================= */
-const BV_KEY = "bv_voting_data";
-// Địa chỉ ví được cấp quyền Admin (demo). Khi kết nối MetaMask, nếu địa chỉ
-// trùng khớp (không phân biệt hoa/thường) thì tài khoản được coi là Admin.
-const BV_ADMIN_ADDRESS = "0xa1b517e141F6d7BE60555dfaBCf27Fdc536C20AA";
+import {
+  initAdminPage,
+  getContract,
+  guardAdmin,
+  shortAddr,
+  fetchVoters,
+} from "./admin-common.js";
 
-function bvDefaultData() {
-  return {
-    admin: { address: null, connected: false, isAdmin: false },
-    election: {
-      name: "Bầu cử Hội đồng DAO 2025",
-      description:
-        "Quyết định về việc tài trợ 50,000 USDT cho các dự án Web3 tiềm năng.",
-      startDate: "",
-      endDate: "",
-      // draft -> registration -> verification -> voting -> ended
-      status: "draft",
-    },
-    voters: [
-      {
-        address: "0xbe35D98101e25E7670591e7394aD5d15E763197d",
-        name: "Cử tri 1",
-        verified: false,
-        locked: false,
-        addedAt: Date.now(),
-      },
-      {
-        address: "0x91b3e291b3e291b3e291b3e291b3e291b3e291b3",
-        name: "Cử tri 2",
-        verified: false,
-        locked: false,
-        addedAt: Date.now(),
-      },
-    ],
-    candidates: [
-      {
-        id: 1,
-        name: "Ứng viên 1",
-        wallet: "0x55c29a4155c29a4155c29a4155c29a4155c29a4",
-        desc: "Đại diện cộng đồng DAO với kinh nghiệm quản lý quỹ đầu tư số.",
-        votes: 0,
-        verified: false,
-      },
-      {
-        id: 2,
-        name: "Ứng viên 2",
-        wallet: "0x12b3ff5412b3ff5412b3ff5412b3ff5412b3ff54",
-        desc: "Chuyên gia công nghệ blockchain, nhiều năm phát triển hợp đồng thông minh.",
-        votes: 0,
-        verified: false,
-      },
-    ],
-    transactions: [],
-  };
-}
+let cachedVoters = [];
 
-function bvLoad() {
-  try {
-    const raw = localStorage.getItem(BV_KEY);
-    if (!raw) {
-      const init = bvDefaultData();
-      localStorage.setItem(BV_KEY, JSON.stringify(init));
-      return init;
-    }
-    return JSON.parse(raw);
-  } catch (e) {
-    const init = bvDefaultData();
-    localStorage.setItem(BV_KEY, JSON.stringify(init));
-    return init;
+async function loadVoters() {
+  const contract = getContract();
+  if (!contract) {
+    cachedVoters = [];
+    return;
   }
+  cachedVoters = await fetchVoters(contract);
 }
 
-function bvSave(data) {
-  localStorage.setItem(BV_KEY, JSON.stringify(data));
-}
-
-function bvShortAddr(addr) {
-  if (!addr) return "";
-  return addr.slice(0, 6) + "..." + addr.slice(-4);
-}
-
-function bvNow() {
-  return new Date().toLocaleString("vi-VN");
-}
-
-// Ghi lại một "giao dịch" on-chain mô phỏng, dùng cho trang Lịch sử Blockchain
-function bvAddTransaction(data, type, wallet, status) {
-  const tx = {
-    hash:
-      "0x" +
-      Array.from(
-        { length: 64 },
-        () => "0123456789abcdef"[Math.floor(Math.random() * 16)],
-      ).join(""),
-    wallet: wallet || data.admin.address || BV_ADMIN_ADDRESS,
-    block: 18200000 + Math.floor(Math.random() * 9999),
-    time: bvNow(),
-    status: status || "success",
-    type: type,
-  };
-  data.transactions.unshift(tx);
-  bvSave(data);
-  return tx;
-}
-
-/* ============================ Kết nối MetaMask ========================== */
-async function bvConnectWallet() {
-  const data = bvLoad();
-  if (typeof window.ethereum === "undefined") {
-    alert(
-      "Không tìm thấy MetaMask. Vui lòng cài đặt tiện ích MetaMask và kết nối với mạng Ganache để tiếp tục.",
-    );
-    return null;
-  }
-  try {
-    const accounts = await window.ethereum.request({
-      method: "eth_requestAccounts",
-    });
-    const address = accounts[0];
-    data.admin.address = address;
-    data.admin.connected = true;
-    data.admin.isAdmin =
-      address.toLowerCase() === BV_ADMIN_ADDRESS.toLowerCase();
-    bvSave(data);
-    bvRenderWallet(data);
-    bvGuardAdmin(data);
-    if (data.admin.isAdmin) {
-      bvAddTransaction(data, "Kết nối ví Admin", address, "success");
-    }
-    return data.admin;
-  } catch (err) {
-    console.error("Kết nối ví thất bại:", err);
-    alert("Kết nối ví thất bại hoặc bị từ chối. Vui lòng thử lại.");
-    return null;
-  }
-}
-
-// Hiển thị trạng thái ví lên header (áp dụng cho mọi trang admin)
-function bvRenderWallet(data) {
-  const addrEl = document.getElementById("wallet-address");
-  const statusEl = document.getElementById("wallet-status");
-  const badgeEl = document.getElementById("wallet-badge");
-  const connectBtn = document.getElementById("connect-wallet-btn");
-
-  if (addrEl) {
-    addrEl.textContent = data.admin.connected
-      ? bvShortAddr(data.admin.address)
-      : "Chưa kết nối";
-  }
-  if (statusEl) {
-    if (data.admin.connected && data.admin.isAdmin) {
-      statusEl.textContent = "Connected (Admin)";
-      statusEl.className = "text-[11px] text-emerald-600 font-medium";
-    } else if (data.admin.connected && !data.admin.isAdmin) {
-      statusEl.textContent = "Ví không có quyền Admin";
-      statusEl.className = "text-[11px] text-error font-medium";
-    } else {
-      statusEl.textContent = "Chưa kết nối";
-      statusEl.className = "text-[11px] text-on-surface-variant font-medium";
-    }
-  }
-  if (badgeEl) {
-    badgeEl.classList.toggle("opacity-50", !data.admin.connected);
-  }
-  if (connectBtn) {
-    connectBtn.textContent = data.admin.connected
-      ? bvShortAddr(data.admin.address)
-      : "Kết nối ví Admin";
-  }
-}
-
-// Chặn thao tác nếu ví chưa kết nối / không có quyền Admin
-function bvGuardAdmin(data) {
-  const warningEl = document.getElementById("admin-guard-warning");
-  const isOk = data.admin.connected && data.admin.isAdmin;
-  if (warningEl) warningEl.classList.toggle("hidden", isOk);
-  document.querySelectorAll("[data-admin-only]").forEach((el) => {
-    el.disabled = !isOk;
-    el.classList.toggle("opacity-50", !isOk);
-    el.classList.toggle("cursor-not-allowed", !isOk);
-  });
-  return isOk;
-}
-
-document.addEventListener("DOMContentLoaded", () => {
-  const data = bvLoad();
-  bvRenderWallet(data);
-  bvGuardAdmin(data);
-  const connectBtn = document.getElementById("connect-wallet-btn");
-  if (connectBtn) connectBtn.addEventListener("click", bvConnectWallet);
-});
-
-/* ======================== Trang Quản lý cử tri ============================
-   Chức năng: Thêm cử tri, Xác thực cử tri, Khóa/Mở quyền bỏ phiếu.
-   ========================================================================= */
-
-function bvRenderVoters() {
-  const data = bvLoad();
+function renderVoters() {
   const tbody = document.getElementById("voters-table-body");
   const emptyState = document.getElementById("voters-empty-state");
   if (!tbody) return;
@@ -319,21 +140,21 @@ function bvRenderVoters() {
   const term = (document.getElementById("voter-search")?.value || "")
     .toLowerCase()
     .trim();
-  const filtered = data.voters.filter(
+  const filtered = cachedVoters.filter(
     (v) =>
       v.name.toLowerCase().includes(term) ||
       v.address.toLowerCase().includes(term),
   );
 
-  document.getElementById("voters-count") &&
-    (document.getElementById("voters-count").textContent =
-      `Hiển thị ${filtered.length} trên tổng số ${data.voters.length} cử tri`);
+  const countEl = document.getElementById("voters-count");
+  if (countEl)
+    countEl.textContent = `Hiển thị ${filtered.length} trên tổng số ${cachedVoters.length} cử tri`;
 
   if (emptyState) emptyState.classList.toggle("hidden", filtered.length > 0);
 
   tbody.innerHTML = filtered
     .map(
-      (v, idx) => `
+      (v) => `
     <tr class="hover:bg-surface-container-lowest transition-colors">
       <td class="px-lg py-md">
         <div class="flex items-center gap-md">
@@ -342,7 +163,7 @@ function bvRenderVoters() {
           </div>
           <div>
             <p class="font-label-md text-label-md text-on-surface">${v.name}</p>
-            <p class="font-mono-label text-mono-label text-on-surface-variant">${bvShortAddr(v.address)}</p>
+            <p class="font-mono-label text-mono-label text-on-surface-variant">${shortAddr(v.address)}</p>
           </div>
         </div>
       </td>
@@ -355,27 +176,22 @@ function bvRenderVoters() {
       </td>
       <td class="px-lg py-md text-center">
         ${
-          v.locked
+          !v.active
             ? `<span class="inline-flex items-center gap-xs px-sm py-xs bg-error-container/30 text-on-error-container rounded-full font-label-md text-label-md"><span class="material-symbols-outlined text-[14px]">lock</span>Đã khóa</span>`
             : `<span class="inline-flex items-center gap-xs px-sm py-xs bg-primary-fixed text-primary rounded-full font-label-md text-label-md"><span class="material-symbols-outlined text-[14px]">lock_open</span>Được phép bầu</span>`
         }
       </td>
       <td class="px-lg py-md text-right">
         <div class="flex items-center justify-end gap-sm">
-          <button data-admin-only ${v.verified ? "disabled" : ""} onclick="bvVerifyVoter(${idx})"
+          <button data-admin-only ${v.verified ? "disabled" : ""} onclick="bvVerifyVoter('${v.address}')"
             class="p-sm text-on-surface-variant hover:text-primary hover:bg-primary-fixed rounded-lg transition-all disabled:opacity-30 disabled:cursor-not-allowed"
             title="Xác thực cử tri">
             <span class="material-symbols-outlined">how_to_reg</span>
           </button>
-          <button data-admin-only onclick="bvToggleLockVoter(${idx})"
+          <button data-admin-only onclick="bvToggleLockVoter('${v.address}', ${v.active})"
             class="p-sm text-on-surface-variant hover:text-amber-600 hover:bg-amber-100/50 rounded-lg transition-all"
-            title="${v.locked ? "Mở quyền bỏ phiếu" : "Khóa quyền bỏ phiếu"}">
-            <span class="material-symbols-outlined">${v.locked ? "lock_open" : "lock"}</span>
-          </button>
-          <button data-admin-only onclick="bvDeleteVoter(${idx})"
-            class="p-sm text-on-surface-variant hover:text-error hover:bg-error-container rounded-lg transition-all"
-            title="Xóa cử tri">
-            <span class="material-symbols-outlined">delete</span>
+            title="${v.active ? "Khóa quyền bỏ phiếu" : "Mở quyền bỏ phiếu"}">
+            <span class="material-symbols-outlined">${v.active ? "lock" : "lock_open"}</span>
           </button>
         </div>
       </td>
@@ -383,13 +199,22 @@ function bvRenderVoters() {
     )
     .join("");
 
-  bvGuardAdmin(data);
+  guardAdmin();
 }
 
-function bvAddVoter(event) {
+async function refreshAndRender() {
+  const tbody = document.getElementById("voters-table-body");
+  if (tbody) {
+    tbody.innerHTML = `<tr><td colspan="4" class="px-lg py-lg text-center text-on-surface-variant font-body-sm text-body-sm">Đang tải dữ liệu từ blockchain...</td></tr>`;
+  }
+  await loadVoters();
+  renderVoters();
+}
+
+async function bvAddVoter(event) {
   event.preventDefault();
-  const data = bvLoad();
-  if (!bvGuardAdmin(data)) {
+  const contract = getContract();
+  if (!guardAdmin() || !contract) {
     alert("Bạn cần kết nối ví Admin để thực hiện thao tác này.");
     return;
   }
@@ -399,69 +224,53 @@ function bvAddVoter(event) {
     alert("Vui lòng nhập đầy đủ Họ tên và Địa chỉ ví.");
     return;
   }
-  if (!/^0x[a-fA-F0-9]{6,64}$/.test(address)) {
-    alert("Địa chỉ ví không hợp lệ. Vui lòng nhập đúng định dạng 0x...");
+  if (!/^0x[a-fA-F0-9]{40}$/.test(address)) {
+    alert("Địa chỉ ví không hợp lệ. Vui lòng nhập đúng định dạng 0x... (40 ký tự hex).");
     return;
   }
-  if (
-    data.voters.some((v) => v.address.toLowerCase() === address.toLowerCase())
-  ) {
+  if (cachedVoters.some((v) => v.address.toLowerCase() === address.toLowerCase())) {
     alert("Địa chỉ ví này đã có trong danh sách cử tri.");
     return;
   }
-  data.voters.push({
-    address,
-    name,
-    verified: false,
-    locked: false,
-    addedAt: Date.now(),
-  });
-  bvAddTransaction(data, `Thêm cử tri: ${name}`, data.admin.address, "success");
-  bvSave(data);
-  bvToggleModal("add-voter-modal");
-  document.getElementById("add-voter-form").reset();
-  bvRenderVoters();
+  try {
+    const tx = await contract.registerVoter(name, address);
+    await tx.wait();
+    bvToggleModal("add-voter-modal");
+    document.getElementById("add-voter-form").reset();
+    await refreshAndRender();
+  } catch (err) {
+    console.error(err);
+    alert("Giao dịch thất bại: " + (err.reason || err.message || "Không xác định"));
+  }
 }
 
-function bvVerifyVoter(idx) {
-  const data = bvLoad();
-  if (!bvGuardAdmin(data)) return;
-  const voter = data.voters[idx];
-  voter.verified = true;
-  bvAddTransaction(
-    data,
-    `Xác thực cử tri: ${voter.name}`,
-    data.admin.address,
-    "success",
-  );
-  bvSave(data);
-  bvRenderVoters();
-}
+window.bvVerifyVoter = async function (address) {
+  const contract = getContract();
+  if (!guardAdmin() || !contract) return;
+  try {
+    const tx = await contract.verifyVoter(address);
+    await tx.wait();
+    await refreshAndRender();
+  } catch (err) {
+    console.error(err);
+    alert("Giao dịch thất bại: " + (err.reason || err.message || "Không xác định"));
+  }
+};
 
-function bvToggleLockVoter(idx) {
-  const data = bvLoad();
-  if (!bvGuardAdmin(data)) return;
-  const voter = data.voters[idx];
-  voter.locked = !voter.locked;
-  bvAddTransaction(
-    data,
-    `${voter.locked ? "Khóa" : "Mở"} quyền bỏ phiếu: ${voter.name}`,
-    data.admin.address,
-    "success",
-  );
-  bvSave(data);
-  bvRenderVoters();
-}
-
-function bvDeleteVoter(idx) {
-  const data = bvLoad();
-  if (!bvGuardAdmin(data)) return;
-  const voter = data.voters[idx];
-  if (!confirm(`Xóa cử tri "${voter.name}" khỏi danh sách?`)) return;
-  data.voters.splice(idx, 1);
-  bvSave(data);
-  bvRenderVoters();
-}
+window.bvToggleLockVoter = async function (address, currentlyActive) {
+  const contract = getContract();
+  if (!guardAdmin() || !contract) return;
+  try {
+    const tx = currentlyActive
+      ? await contract.disableVoter(address)
+      : await contract.enableVoter(address);
+    await tx.wait();
+    await refreshAndRender();
+  } catch (err) {
+    console.error(err);
+    alert("Giao dịch thất bại: " + (err.reason || err.message || "Không xác định"));
+  }
+};
 
 function bvToggleModal(modalId) {
   const modal = document.getElementById(modalId);
@@ -481,16 +290,20 @@ function bvToggleModal(modalId) {
     setTimeout(() => modal.classList.add("hidden"), 300);
   }
 }
+window.bvToggleModal = bvToggleModal;
 
-document.addEventListener("DOMContentLoaded", () => {
-  bvRenderVoters();
+document.addEventListener("DOMContentLoaded", async () => {
+  await initAdminPage((state) => {
+    if (state.connected) refreshAndRender();
+    else renderVoters();
+  });
+
   const form = document.getElementById("add-voter-form");
   if (form) form.addEventListener("submit", bvAddVoter);
   const search = document.getElementById("voter-search");
-  if (search) search.addEventListener("input", bvRenderVoters);
+  if (search) search.addEventListener("input", renderVoters);
 });
 
-// Đóng modal khi bấm ra ngoài
 window.addEventListener("click", (event) => {
   const modal = document.getElementById("add-voter-modal");
   if (modal && event.target === modal) bvToggleModal("add-voter-modal");

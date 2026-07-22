@@ -109,206 +109,18 @@ tailwind.config = {
 };
 
 /* =========================================================================
-   BVStore — Lớp lưu trữ dữ liệu mô phỏng (localStorage) dùng chung cho toàn
-   bộ khu vực Admin. Trong bản demo này dữ liệu được lưu tại trình duyệt để
-   mô phỏng trạng thái Smart Contract (cử tri, ứng viên, cuộc bầu cử, giao
-   dịch on-chain). Khi tích hợp thật, các hàm bên dưới chỉ cần thay bằng lời
-   gọi ethers.js tới Smart Contract đã deploy trên Ganache.
+   TRANG LỊCH SỬ GIAO DỊCH BLOCKCHAIN — tích hợp ethers.js
+   Toàn bộ danh sách được dựng lại thật từ event log của Smart Contract
+   (không còn dữ liệu localStorage mô phỏng).
    ========================================================================= */
-const BV_KEY = "bv_voting_data";
-// Địa chỉ ví được cấp quyền Admin (demo). Khi kết nối MetaMask, nếu địa chỉ
-// trùng khớp (không phân biệt hoa/thường) thì tài khoản được coi là Admin.
-const BV_ADMIN_ADDRESS = "0xa1b517e141F6d7BE60555dfaBCf27Fdc536C20AA";
+import {
+  initAdminPage,
+  getContract,
+  getProvider,
+  fetchAllTransactions,
+} from "./admin-common.js";
 
-function bvDefaultData() {
-  return {
-    admin: { address: null, connected: false, isAdmin: false },
-    election: {
-      name: "Bầu cử Hội đồng DAO 2025",
-      description:
-        "Quyết định về việc tài trợ 50,000 USDT cho các dự án Web3 tiềm năng.",
-      startDate: "",
-      endDate: "",
-      // draft -> registration -> verification -> voting -> ended
-      status: "draft",
-    },
-    voters: [
-      {
-        address: "0x82a1f0a1f0a1f0a1f0a1f0a1f0a1f0a1f0a1f0a1",
-        name: "Cử tri 1",
-        verified: false,
-        locked: false,
-        addedAt: Date.now(),
-      },
-      {
-        address: "0x91b3e291b3e291b3e291b3e291b3e291b3e291b3",
-        name: "Cử tri 2",
-        verified: false,
-        locked: false,
-        addedAt: Date.now(),
-      },
-    ],
-    candidates: [
-      {
-        id: 1,
-        name: "Ứng viên 1",
-        wallet: "0x55c29a4155c29a4155c29a4155c29a4155c29a4",
-        desc: "Đại diện cộng đồng DAO với kinh nghiệm quản lý quỹ đầu tư số.",
-        votes: 0,
-        verified: false,
-      },
-      {
-        id: 2,
-        name: "Ứng viên 2",
-        wallet: "0x12b3ff5412b3ff5412b3ff5412b3ff5412b3ff54",
-        desc: "Chuyên gia công nghệ blockchain, nhiều năm phát triển hợp đồng thông minh.",
-        votes: 0,
-        verified: false,
-      },
-    ],
-    transactions: [],
-  };
-}
-
-function bvLoad() {
-  try {
-    const raw = localStorage.getItem(BV_KEY);
-    if (!raw) {
-      const init = bvDefaultData();
-      localStorage.setItem(BV_KEY, JSON.stringify(init));
-      return init;
-    }
-    return JSON.parse(raw);
-  } catch (e) {
-    const init = bvDefaultData();
-    localStorage.setItem(BV_KEY, JSON.stringify(init));
-    return init;
-  }
-}
-
-function bvSave(data) {
-  localStorage.setItem(BV_KEY, JSON.stringify(data));
-}
-
-function bvShortAddr(addr) {
-  if (!addr) return "";
-  return addr.slice(0, 6) + "..." + addr.slice(-4);
-}
-
-function bvNow() {
-  return new Date().toLocaleString("vi-VN");
-}
-
-// Ghi lại một "giao dịch" on-chain mô phỏng, dùng cho trang Lịch sử Blockchain
-function bvAddTransaction(data, type, wallet, status) {
-  const tx = {
-    hash:
-      "0x" +
-      Array.from(
-        { length: 64 },
-        () => "0123456789abcdef"[Math.floor(Math.random() * 16)],
-      ).join(""),
-    wallet: wallet || data.admin.address || BV_ADMIN_ADDRESS,
-    block: 18200000 + Math.floor(Math.random() * 9999),
-    time: bvNow(),
-    status: status || "success",
-    type: type,
-  };
-  data.transactions.unshift(tx);
-  bvSave(data);
-  return tx;
-}
-
-/* ============================ Kết nối MetaMask ========================== */
-async function bvConnectWallet() {
-  const data = bvLoad();
-  if (typeof window.ethereum === "undefined") {
-    alert(
-      "Không tìm thấy MetaMask. Vui lòng cài đặt tiện ích MetaMask và kết nối với mạng Ganache để tiếp tục.",
-    );
-    return null;
-  }
-  try {
-    const accounts = await window.ethereum.request({
-      method: "eth_requestAccounts",
-    });
-    const address = accounts[0];
-    data.admin.address = address;
-    data.admin.connected = true;
-    data.admin.isAdmin =
-      address.toLowerCase() === BV_ADMIN_ADDRESS.toLowerCase();
-    bvSave(data);
-    bvRenderWallet(data);
-    bvGuardAdmin(data);
-    if (data.admin.isAdmin) {
-      bvAddTransaction(data, "Kết nối ví Admin", address, "success");
-    }
-    return data.admin;
-  } catch (err) {
-    console.error("Kết nối ví thất bại:", err);
-    alert("Kết nối ví thất bại hoặc bị từ chối. Vui lòng thử lại.");
-    return null;
-  }
-}
-
-// Hiển thị trạng thái ví lên header (áp dụng cho mọi trang admin)
-function bvRenderWallet(data) {
-  const addrEl = document.getElementById("wallet-address");
-  const statusEl = document.getElementById("wallet-status");
-  const badgeEl = document.getElementById("wallet-badge");
-  const connectBtn = document.getElementById("connect-wallet-btn");
-
-  if (addrEl) {
-    addrEl.textContent = data.admin.connected
-      ? bvShortAddr(data.admin.address)
-      : "Chưa kết nối";
-  }
-  if (statusEl) {
-    if (data.admin.connected && data.admin.isAdmin) {
-      statusEl.textContent = "Connected (Admin)";
-      statusEl.className = "text-[11px] text-emerald-600 font-medium";
-    } else if (data.admin.connected && !data.admin.isAdmin) {
-      statusEl.textContent = "Ví không có quyền Admin";
-      statusEl.className = "text-[11px] text-error font-medium";
-    } else {
-      statusEl.textContent = "Chưa kết nối";
-      statusEl.className = "text-[11px] text-on-surface-variant font-medium";
-    }
-  }
-  if (badgeEl) {
-    badgeEl.classList.toggle("opacity-50", !data.admin.connected);
-  }
-  if (connectBtn) {
-    connectBtn.textContent = data.admin.connected
-      ? bvShortAddr(data.admin.address)
-      : "Kết nối ví Admin";
-  }
-}
-
-// Chặn thao tác nếu ví chưa kết nối / không có quyền Admin
-function bvGuardAdmin(data) {
-  const warningEl = document.getElementById("admin-guard-warning");
-  const isOk = data.admin.connected && data.admin.isAdmin;
-  if (warningEl) warningEl.classList.toggle("hidden", isOk);
-  document.querySelectorAll("[data-admin-only]").forEach((el) => {
-    el.disabled = !isOk;
-    el.classList.toggle("opacity-50", !isOk);
-    el.classList.toggle("cursor-not-allowed", !isOk);
-  });
-  return isOk;
-}
-
-document.addEventListener("DOMContentLoaded", () => {
-  const data = bvLoad();
-  bvRenderWallet(data);
-  bvGuardAdmin(data);
-  const connectBtn = document.getElementById("connect-wallet-btn");
-  if (connectBtn) connectBtn.addEventListener("click", bvConnectWallet);
-});
-
-/* ====================== Trang Lịch sử Blockchain ============================
-   Hiển thị: Transaction Hash, Wallet, Block Number, Time, Status.
-   ========================================================================= */
+let cachedTx = [];
 
 function bvStatusPill(status) {
   if (status === "success") {
@@ -320,8 +132,12 @@ function bvStatusPill(status) {
   return `<span class="inline-flex items-center gap-1 px-sm py-xs bg-error-container text-on-error-container rounded-full font-label-md text-[12px]"><span class="w-1.5 h-1.5 rounded-full bg-error"></span>Thất bại</span>`;
 }
 
-function bvRenderTransactions() {
-  const data = bvLoad();
+function shortAddr(addr) {
+  if (!addr) return "—";
+  return addr.slice(0, 6) + "..." + addr.slice(-4);
+}
+
+function renderTransactions() {
   const tbody = document.getElementById("tx-table-body");
   const emptyState = document.getElementById("tx-empty-state");
   if (!tbody) return;
@@ -329,16 +145,16 @@ function bvRenderTransactions() {
   const term = (document.getElementById("tx-search")?.value || "")
     .toLowerCase()
     .trim();
-  const filtered = data.transactions.filter(
+  const filtered = cachedTx.filter(
     (tx) =>
       tx.hash.toLowerCase().includes(term) ||
-      tx.wallet.toLowerCase().includes(term) ||
+      (tx.wallet || "").toLowerCase().includes(term) ||
       tx.type.toLowerCase().includes(term),
   );
 
-  document.getElementById("tx-count") &&
-    (document.getElementById("tx-count").textContent =
-      `Hiển thị ${filtered.length} trên tổng số ${data.transactions.length} giao dịch`);
+  const countEl = document.getElementById("tx-count");
+  if (countEl)
+    countEl.textContent = `Hiển thị ${filtered.length} trên tổng số ${cachedTx.length} giao dịch`;
 
   if (emptyState) emptyState.classList.toggle("hidden", filtered.length > 0);
 
@@ -350,7 +166,7 @@ function bvRenderTransactions() {
         <p class="font-mono-label text-mono-label text-primary">${tx.hash.slice(0, 10)}...${tx.hash.slice(-6)}</p>
         <p class="font-body-sm text-body-sm text-on-surface-variant">${tx.type}</p>
       </td>
-      <td class="px-lg py-md font-mono-label text-mono-label text-on-surface">${bvShortAddr(tx.wallet)}</td>
+      <td class="px-lg py-md font-mono-label text-mono-label text-on-surface">${shortAddr(tx.wallet)}</td>
       <td class="px-lg py-md font-mono-label text-mono-label text-on-surface-variant">#${tx.block.toLocaleString("vi-VN")}</td>
       <td class="px-lg py-md font-body-sm text-body-sm text-on-surface-variant">${tx.time}</td>
       <td class="px-lg py-md text-center">${bvStatusPill(tx.status)}</td>
@@ -358,27 +174,40 @@ function bvRenderTransactions() {
     )
     .join("");
 
-  // Thống kê tổng quan
   const set = (id, val) => {
     const el = document.getElementById(id);
     if (el) el.textContent = val;
   };
-  set("tx-stat-total", data.transactions.length.toLocaleString("vi-VN"));
+  set("tx-stat-total", cachedTx.length.toLocaleString("vi-VN"));
   set(
     "tx-stat-success",
-    data.transactions
-      .filter((t) => t.status === "success")
-      .length.toLocaleString("vi-VN"),
+    cachedTx.filter((t) => t.status === "success").length.toLocaleString("vi-VN"),
   );
-  set("tx-stat-block", "#" + (18200000 + data.transactions.length));
+  set(
+    "tx-stat-block",
+    cachedTx.length ? "#" + cachedTx[0].block.toLocaleString("vi-VN") : "—",
+  );
 }
 
-document.addEventListener("DOMContentLoaded", () => {
-  bvRenderTransactions();
-  const search = document.getElementById("tx-search");
-  if (search) search.addEventListener("input", bvRenderTransactions);
-  const refreshBtn = document.getElementById("tx-refresh-btn");
-  if (refreshBtn) refreshBtn.addEventListener("click", bvRenderTransactions);
+async function refreshAndRender() {
+  const contract = getContract();
+  const provider = getProvider();
+  const tbody = document.getElementById("tx-table-body");
+  if (tbody) {
+    tbody.innerHTML = `<tr><td colspan="5" class="px-lg py-lg text-center text-on-surface-variant font-body-sm text-body-sm">Đang tải lịch sử giao dịch từ blockchain...</td></tr>`;
+  }
+  cachedTx = contract && provider ? await fetchAllTransactions(contract, provider, 300) : [];
+  renderTransactions();
+}
 
-  document.querySelectorAll("#tx-table-body").forEach(() => {});
+document.addEventListener("DOMContentLoaded", async () => {
+  await initAdminPage((state) => {
+    if (state.connected) refreshAndRender();
+    else renderTransactions();
+  });
+
+  const search = document.getElementById("tx-search");
+  if (search) search.addEventListener("input", renderTransactions);
+  const refreshBtn = document.getElementById("tx-refresh-btn");
+  if (refreshBtn) refreshBtn.addEventListener("click", refreshAndRender);
 });
