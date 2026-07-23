@@ -127,6 +127,10 @@ import {
 } from "./election-utils.js";
 
 let activeElectionId = null;
+const urlParams = new URLSearchParams(window.location.search);
+const requestedElectionId = urlParams.has("electionId")
+  ? BigInt(urlParams.get("electionId"))
+  : null;
 
 const BV_STAGES = [
   {
@@ -172,9 +176,27 @@ async function loadControlPage() {
     return;
   }
 
-  activeElectionId = await getActiveElectionId(contract);
+  activeElectionId =
+    requestedElectionId !== null
+      ? requestedElectionId
+      : await getActiveElectionId(contract);
   if (activeElectionId === null) {
-    set("election-name-display", 'Chưa có cuộc bầu cử nào. Hãy tạo ở trang "Quản lý bầu cử".');
+    set(
+      "election-name-display",
+      'Chưa có cuộc bầu cử nào. Hãy tạo ở trang "Quản lý bầu cử".',
+    );
+    const stagesEl = document.getElementById("stage-controls");
+    if (stagesEl) stagesEl.innerHTML = "";
+    return;
+  }
+
+  // Kiểm tra electionId hợp lệ (phòng khi người dùng tự sửa tay trên URL)
+  const electionCount = await contract.electionCount();
+  if (activeElectionId >= electionCount) {
+    set(
+      "election-name-display",
+      `Không tìm thấy cuộc bầu cử #${activeElectionId}.`,
+    );
     const stagesEl = document.getElementById("stage-controls");
     if (stagesEl) stagesEl.innerHTML = "";
     return;
@@ -186,7 +208,7 @@ async function loadControlPage() {
     Promise.resolve(contract.provider ?? contract.runner?.provider),
   ]);
 
-  set("election-name-display", election.title);
+  set("election-name-display", `${election.title} (#${election.id})`);
   const statusIcon = {
     draft: "⚪",
     registration: "🟠",
@@ -278,7 +300,8 @@ async function loadControlPage() {
     try {
       const readContract = getReadContract();
       const events = await fetchAllEvents(readContract, 6);
-      const readProvider = readContract.provider ?? readContract.runner?.provider;
+      const readProvider =
+        readContract.provider ?? readContract.runner?.provider;
       const logs = await Promise.all(
         events.map((ev) => describeEvent(ev, readProvider)),
       );

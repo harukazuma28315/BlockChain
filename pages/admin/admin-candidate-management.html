@@ -176,13 +176,27 @@
           class="flex flex-col md:flex-row md:items-center justify-between gap-md mb-lg"
         >
           <div>
+            <nav class="flex gap-xs mb-xs">
+              <a
+                href="admin-ballot-management.html"
+                class="font-body-sm text-body-sm text-on-surface-variant hover:text-primary transition-colors"
+                >Quản lý bầu cử</a
+              >
+              <span class="font-body-sm text-body-sm text-on-surface-variant"
+                >/</span
+              >
+              <span class="font-body-sm text-body-sm text-primary font-medium"
+                >Ứng viên</span
+              >
+            </nav>
             <h1 class="font-headline-lg text-headline-lg text-on-surface">
               Quản lý ứng viên
             </h1>
-            <p class="font-body-md text-body-md text-on-surface-variant">
-              Thêm và xác thực các ứng viên tham gia cuộc bầu cử hiện tại. Dữ
-              liệu được ghi trực tiếp lên Smart Contract nên không thể sửa/xóa
-              sau khi đã thêm.
+            <p
+              id="candidate-election-context"
+              class="font-body-md text-body-md text-on-surface-variant"
+            >
+              Đang tải thông tin cuộc bầu cử...
             </p>
           </div>
           <button
@@ -349,6 +363,10 @@
       </div>
     </div>
 
-    <script src="../../JS/admin-candidate-management.js" type="module" defer></script>
+    <script
+      src="../../JS/admin-candidate-management.js"
+      type="module"
+      defer
+    ></script>
   </body>
 </html>

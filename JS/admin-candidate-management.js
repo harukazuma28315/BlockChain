@@ -111,8 +111,11 @@ tailwind.config = {
 // ====================== ADMIN-CANDIDATE-MANAGEMENT.JS ======================
 // Trang Quản lý ứng viên — tích hợp THẬT với Smart Contract qua ethers.js.
 // Chức năng khớp với những gì contract hỗ trợ:
-//   - Thêm ứng viên vào cuộc bầu cử hiện hành: contract.addCandidate(...)
+//   - Thêm ứng viên vào MỘT cuộc bầu cử cụ thể: contract.addCandidate(electionId, ...)
 //   - Xác thực ứng viên: contract.verifyCandidate(...)
+// Trang này quản lý ứng viên theo TỪNG cuộc bầu cử riêng biệt: electionId
+// được đọc từ URL (?electionId=X, đến từ nút "Xem ứng viên" ở trang Quản lý
+// bầu cử). Nếu không có tham số, mặc định dùng cuộc bầu cử mới nhất.
 // Lưu ý: Smart Contract KHÔNG hỗ trợ sửa hoặc xóa ứng viên sau khi đã thêm
 // (đây là chủ đích thiết kế để đảm bảo tính minh bạch/không thể giả mạo của
 // dữ liệu on-chain), nên UI không còn nút "Sửa" / "Xóa" như bản demo cũ.
@@ -120,9 +123,15 @@ import { getContract } from "./blockchain.js";
 import { initAdminWallet, guardAdmin, toast, runTx } from "./admin-common.js";
 import {
   getActiveElectionId,
+  getElectionPlain,
   getCandidatesForElection,
   shortAddr,
 } from "./election-utils.js";
+
+const urlParams = new URLSearchParams(window.location.search);
+const requestedElectionId = urlParams.has("electionId")
+  ? BigInt(urlParams.get("electionId"))
+  : null;
 
 let activeElectionId = null;
 
@@ -142,12 +151,34 @@ async function loadCandidates() {
     return;
   }
 
-  activeElectionId = await getActiveElectionId(contract);
+  activeElectionId =
+    requestedElectionId !== null
+      ? requestedElectionId
+      : await getActiveElectionId(contract);
+
   if (activeElectionId === null) {
     tbody.innerHTML = `<tr><td colspan="5" class="px-lg py-xl text-center text-on-surface-variant">Chưa có cuộc bầu cử nào được tạo. Vào trang "Quản lý bầu cử" để tạo cuộc bầu cử trước.</td></tr>`;
     if (emptyState) emptyState.classList.add("hidden");
+    setText("candidate-election-context", "Chưa có cuộc bầu cử nào.");
     return;
   }
+
+  const electionCount = await contract.electionCount();
+  if (activeElectionId >= electionCount) {
+    tbody.innerHTML = `<tr><td colspan="5" class="px-lg py-xl text-center text-error">Không tìm thấy cuộc bầu cử #${activeElectionId}.</td></tr>`;
+    if (emptyState) emptyState.classList.add("hidden");
+    setText(
+      "candidate-election-context",
+      `Không tìm thấy cuộc bầu cử #${activeElectionId}.`,
+    );
+    return;
+  }
+
+  const election = await getElectionPlain(contract, activeElectionId);
+  setText(
+    "candidate-election-context",
+    `Quản lý ứng viên của cuộc bầu cử: "${election.title}" (#${election.id})`,
+  );
 
   let candidates;
   try {
@@ -224,7 +255,10 @@ window.bvOpenAddCandidate = bvOpenAddCandidate;
 async function bvSaveCandidate(event) {
   event.preventDefault();
   if (activeElectionId === null) {
-    toast('Chưa có cuộc bầu cử nào. Hãy tạo cuộc bầu cử ở trang "Quản lý bầu cử" trước.', "error");
+    toast(
+      'Chưa có cuộc bầu cử nào. Hãy tạo cuộc bầu cử ở trang "Quản lý bầu cử" trước.',
+      "error",
+    );
     return;
   }
   const name = document.getElementById("candidate-name-input").value.trim();
@@ -235,7 +269,10 @@ async function bvSaveCandidate(event) {
     return;
   }
   if (!/^0x[a-fA-F0-9]{40}$/.test(wallet)) {
-    toast("Địa chỉ ví không hợp lệ. Vui lòng nhập đúng định dạng 0x + 40 ký tự hex.", "error");
+    toast(
+      "Địa chỉ ví không hợp lệ. Vui lòng nhập đúng định dạng 0x + 40 ký tự hex.",
+      "error",
+    );
     return;
   }
 
@@ -295,9 +332,15 @@ document.addEventListener("DOMContentLoaded", async () => {
   if (openBtn) openBtn.addEventListener("click", bvOpenAddCandidate);
 
   document.querySelectorAll("button").forEach((button) => {
-    button.addEventListener("mousedown", () => button.classList.add("scale-95"));
-    button.addEventListener("mouseup", () => button.classList.remove("scale-95"));
-    button.addEventListener("mouseleave", () => button.classList.remove("scale-95"));
+    button.addEventListener("mousedown", () =>
+      button.classList.add("scale-95"),
+    );
+    button.addEventListener("mouseup", () =>
+      button.classList.remove("scale-95"),
+    );
+    button.addEventListener("mouseleave", () =>
+      button.classList.remove("scale-95"),
+    );
   });
 
   window.addEventListener("bv:wallet-ready", loadCandidates);

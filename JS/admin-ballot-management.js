@@ -110,19 +110,20 @@ tailwind.config = {
 
 // ====================== ADMIN-BALLOT-MANAGEMENT.JS ======================
 // Trang Quản lý cuộc bầu cử — tích hợp THẬT với Smart Contract qua ethers.js.
-//   - Tạo cuộc bầu cử: contract.createElection(title, description)
+//   - Tạo cuộc bầu cử mới: contract.createElection(title, description)
 //   - Việc chuyển trạng thái (mở đăng ký/xác thực/bỏ phiếu/kết thúc) được
-//     thực hiện ở trang "Điều khiển" (admin-system-control.html).
-// Giao diện quản lý MỘT cuộc bầu cử "đang hoạt động" tại một thời điểm =
-// cuộc bầu cử mới nhất được tạo (electionCount - 1).
+//     thực hiện riêng cho TỪNG cuộc bầu cử ở trang "Điều khiển"
+//     (admin-system-control.html?electionId=X).
+// Contract hỗ trợ NHIỀU cuộc bầu cử tồn tại/chạy song song cùng lúc
+// (electionCount tăng dần, mỗi electionId độc lập với nhau), nên trang này
+// hiển thị TOÀN BỘ danh sách, mỗi dòng có nút "Điều khiển" riêng trỏ đúng
+// electionId của dòng đó — không còn giới hạn chỉ 1 cuộc bầu cử "hiện tại".
 import { getContract } from "./blockchain.js";
 import { initAdminWallet, toast, runTx } from "./admin-common.js";
 import {
-  getActiveElectionId,
   getElectionPlain,
   getAllCandidatesPlain,
   getAllVotersPlain,
-  STATUS_LABELS,
 } from "./election-utils.js";
 
 function bvStatusBadge(statusKey) {
@@ -160,11 +161,11 @@ async function loadBallotPage() {
     const el = document.getElementById(id);
     if (el) el.textContent = val;
   };
-  const row = document.getElementById("election-row");
+  const tbody = document.getElementById("elections-table-body");
 
   if (!contract) {
-    if (row)
-      row.innerHTML = `<td colspan="4" class="px-lg py-lg text-center text-on-surface-variant">Kết nối ví để tải dữ liệu từ Smart Contract...</td>`;
+    if (tbody)
+      tbody.innerHTML = `<tr><td colspan="4" class="px-lg py-lg text-center text-on-surface-variant">Kết nối ví để tải dữ liệu từ Smart Contract...</td></tr>`;
     return;
   }
 
@@ -178,38 +179,72 @@ async function loadBallotPage() {
   set("bs-total-candidates", candidates.length.toString());
   set("bs-total-voters", voters.length.toString());
 
-  const activeElectionId = await getActiveElectionId(contract);
-  if (activeElectionId === null) {
-    if (row)
-      row.innerHTML = `<td colspan="4" class="px-lg py-lg text-center text-on-surface-variant">Chưa có cuộc bầu cử nào. Bấm "Tạo cuộc bầu cử" để bắt đầu.</td>`;
+  if (electionCount === 0n) {
+    if (tbody)
+      tbody.innerHTML = `<tr><td colspan="4" class="px-lg py-lg text-center text-on-surface-variant">Chưa có cuộc bầu cử nào. Bấm "Tạo cuộc bầu cử" để bắt đầu.</td></tr>`;
     return;
   }
 
-  const election = await getElectionPlain(contract, activeElectionId);
-  if (row) {
-    row.innerHTML = `
-      <td class="px-lg py-lg">
-        <p class="font-label-md text-label-md text-on-surface">${election.title}</p>
-        <p class="font-body-sm text-body-sm text-on-surface-variant max-w-md line-clamp-2">${election.description || "—"}</p>
-      </td>
-      <td class="px-lg py-lg">
-        <div class="flex flex-col gap-1">
-          <div class="flex items-center gap-2 text-on-surface-variant">
-            <span class="material-symbols-outlined text-[16px]">play_circle</span>
-            <span class="font-mono-label text-mono-label">${fmtTime(election.startTime)}</span>
+  // Lấy TOÀN BỘ các cuộc bầu cử đã từng tạo (electionId chạy từ 0 đến
+  // electionCount - 1). Mỗi cuộc bầu cử độc lập, có thể đang ở bất kỳ giai
+  // đoạn nào cùng lúc (vd: cuộc #0 đang "Đang bỏ phiếu" trong khi cuộc #1
+  // đang "Đang mở đăng ký") — hiển thị mới nhất lên đầu.
+  const ids = Array.from({ length: Number(electionCount) }, (_, i) =>
+    BigInt(i),
+  ).reverse();
+  const elections = await Promise.all(
+    ids.map((id) => getElectionPlain(contract, id)),
+  );
+
+  if (tbody) {
+    tbody.innerHTML = elections
+      .map((election) => {
+        const isLive = election.statusKey === "voting";
+        return `
+      <tr class="hover:bg-surface-container-lowest transition-colors">
+        <td class="px-lg py-lg">
+          <div class="flex items-center gap-sm">
+            <p class="font-label-md text-label-md text-on-surface">${election.title}</p>
+            <span class="font-mono-label text-mono-label text-on-surface-variant">#${election.id}</span>
+            ${isLive ? '<span class="px-2 py-[1px] bg-primary-fixed text-primary text-[10px] font-bold rounded-full uppercase animate-pulse">Đang diễn ra</span>' : ""}
           </div>
-          <div class="flex items-center gap-2 text-on-surface-variant">
-            <span class="material-symbols-outlined text-[16px]">stop_circle</span>
-            <span class="font-mono-label text-mono-label">${fmtTime(election.endTime)}</span>
+          <p class="font-body-sm text-body-sm text-on-surface-variant max-w-md line-clamp-2">${election.description || "—"}</p>
+        </td>
+        <td class="px-lg py-lg">
+          <div class="flex flex-col gap-1">
+            <div class="flex items-center gap-2 text-on-surface-variant">
+              <span class="material-symbols-outlined text-[16px]">play_circle</span>
+              <span class="font-mono-label text-mono-label">${fmtTime(election.startTime)}</span>
+            </div>
+            <div class="flex items-center gap-2 text-on-surface-variant">
+              <span class="material-symbols-outlined text-[16px]">stop_circle</span>
+              <span class="font-mono-label text-mono-label">${fmtTime(election.endTime)}</span>
+            </div>
           </div>
-        </div>
-      </td>
-      <td class="px-lg py-lg text-center">${bvStatusBadge(election.statusKey)}</td>
-      <td class="px-lg py-lg text-right">
-        <a href="admin-system-control.html" class="p-2 hover:bg-primary-fixed rounded-lg transition-colors text-primary inline-flex" title="Điều khiển cuộc bầu cử">
-          <span class="material-symbols-outlined">settings_input_component</span>
-        </a>
-      </td>`;
+        </td>
+        <td class="px-lg py-lg text-center">${bvStatusBadge(election.statusKey)}</td>
+        <td class="px-lg py-lg text-right">
+          <div class="flex items-center justify-end gap-xs">
+            <a href="admin-system-control.html?electionId=${election.id}"
+               class="p-2 hover:bg-primary-fixed rounded-lg transition-colors text-primary inline-flex"
+               title="Điều khiển cuộc bầu cử #${election.id}">
+              <span class="material-symbols-outlined">settings_input_component</span>
+            </a>
+            <a href="admin-candidate-management.html?electionId=${election.id}"
+               class="p-2 hover:bg-secondary-fixed rounded-lg transition-colors text-secondary inline-flex"
+               title="Xem ứng viên của cuộc bầu cử #${election.id}">
+              <span class="material-symbols-outlined">groups</span>
+            </a>
+            <a href="../voting/vote-results.html?electionId=${election.id}"
+               class="p-2 hover:bg-surface-container-high rounded-lg transition-colors text-on-surface-variant inline-flex"
+               title="Xem kết quả cuộc bầu cử #${election.id}">
+              <span class="material-symbols-outlined">visibility</span>
+            </a>
+          </div>
+        </td>
+      </tr>`;
+      })
+      .join("");
   }
 }
 
