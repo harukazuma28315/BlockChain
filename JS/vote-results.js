@@ -127,36 +127,128 @@
           },
         },
       };
-    
 
+// ====================== VOTE-RESULTS.JS (Trang kết quả) ======================
+// Đọc kết quả THẬT từ Smart Contract: số phiếu từng ứng viên, người dẫn đầu
+// (getWinner), tổng số phiếu (totalVotes) và tỷ lệ tham gia.
+import { getReadContract } from "./blockchain.js";
+import {
+  getElectionPlain,
+  getCandidatesForElection,
+  getAllVotersPlain,
+  STATUS_LABELS,
+  shortAddr,
+} from "./election-utils.js";
 
-      // Simple micro-interaction for the winner card
-      document.addEventListener("DOMContentLoaded", () => {
-        const winnerCard = document.querySelector(".winner-gradient");
-        if (winnerCard) {
-          winnerCard.addEventListener("mousemove", (e) => {
-            const rect = winnerCard.getBoundingClientRect();
-            const x = e.clientX - rect.left;
-            const y = e.clientY - rect.top;
+const params = new URLSearchParams(window.location.search);
+let electionId = params.has("electionId") ? BigInt(params.get("electionId")) : null;
 
-            winnerCard.style.setProperty("--mouse-x", `${x}px`);
-            winnerCard.style.setProperty("--mouse-y", `${y}px`);
-          });
-        }
-      });
+async function resolveElectionId(contract) {
+  if (electionId !== null) return electionId;
+  const count = await contract.electionCount();
+  return count === 0n ? null : count - 1n;
+}
 
-      // Simulating some animation on page load
-      window.addEventListener("load", () => {
-        const progressBars = document.querySelectorAll(
-          ".bg-primary, .bg-secondary, .bg-primary-container",
-        );
-        progressBars.forEach((bar) => {
-          const targetWidth = bar.style.width;
-          bar.style.width = "0%";
-          setTimeout(() => {
-            bar.style.transition = "width 1.5s cubic-bezier(0.22, 1, 0.36, 1)";
-            bar.style.width = targetWidth;
-          }, 300);
-        });
-      });
-    
+function set(id, val) {
+  const el = document.getElementById(id);
+  if (el) el.innerHTML = val;
+}
+
+async function loadResults() {
+  const contract = getReadContract();
+  electionId = await resolveElectionId(contract);
+
+  if (electionId === null) {
+    set("rsElectionTitle", "Chưa có cuộc bầu cử nào được tạo.");
+    return;
+  }
+
+  const [election, candidates, voters] = await Promise.all([
+    getElectionPlain(contract, electionId),
+    getCandidatesForElection(contract, electionId),
+    getAllVotersPlain(contract),
+  ]);
+
+  set("rsElectionTitle", `${election.title} — ${STATUS_LABELS[election.statusKey]}`);
+
+  const badgeEl = document.getElementById("rsStatusBadge");
+  if (badgeEl) {
+    const isEnded = election.statusKey === "ended";
+    badgeEl.innerHTML = `<span class="w-2 h-2 rounded-full ${isEnded ? "bg-outline" : "bg-emerald-500 animate-pulse"}"></span><span class="font-label-md text-label-md">${isEnded ? "Đã kết thúc" : "Đang cập nhật trực tiếp"}</span>`;
+  }
+
+  const verified = candidates.filter((c) => c.verified);
+  const totalVotes = verified.reduce((s, c) => s + c.voteCount, 0);
+  const sorted = verified.slice().sort((a, b) => b.voteCount - a.voteCount);
+  const winner = sorted[0];
+
+  set("rsTotalVotes", totalVotes.toLocaleString("vi-VN"));
+  set("rsTotalVoters", voters.length.toLocaleString("vi-VN"));
+  set(
+    "rsTurnout",
+    voters.length ? `${((totalVotes / voters.length) * 100).toFixed(1)}%` : "0%",
+  );
+
+  const winnerCard = document.getElementById("rsWinnerCard");
+  if (winner && winner.voteCount > 0) {
+    if (winnerCard) winnerCard.classList.remove("hidden");
+    set("rsWinnerName", winner.fullName);
+    set("rsWinnerDesc", winner.description || "Không có mô tả.");
+    set("rsWinnerVotes", winner.voteCount.toLocaleString("vi-VN"));
+    set(
+      "rsWinnerPct",
+      totalVotes ? `${((winner.voteCount / totalVotes) * 100).toFixed(1)}%` : "0%",
+    );
+  } else if (winnerCard) {
+    winnerCard.classList.add("hidden");
+  }
+
+  const list = document.getElementById("rsRankingList");
+  if (list) {
+    list.innerHTML = sorted.length
+      ? sorted
+          .map((c, i) => {
+            const pct = totalVotes ? (c.voteCount / totalVotes) * 100 : 0;
+            return `
+        <div class="px-lg py-md flex items-center gap-md">
+          <div class="w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${i === 0 ? "bg-primary text-on-primary" : "bg-surface-container text-on-surface-variant"}">${i + 1}</div>
+          <div class="flex-1 min-w-0">
+            <div class="flex justify-between items-center mb-1">
+              <p class="font-label-md text-label-md text-on-surface truncate">${c.fullName}</p>
+              <p class="font-label-md text-label-md text-on-surface-variant">${c.voteCount.toLocaleString("vi-VN")} phiếu (${pct.toFixed(1)}%)</p>
+            </div>
+            <div class="w-full h-2 bg-surface-container rounded-full overflow-hidden">
+              <div class="${i === 0 ? "bg-primary" : "bg-secondary-container"} h-full rounded-full" style="width:${pct}%"></div>
+            </div>
+          </div>
+        </div>`;
+          })
+          .join("")
+      : `<p class="p-lg text-center text-on-surface-variant">Chưa có ứng viên nào.</p>`;
+  }
+}
+
+async function bvRenderWalletHeader() {
+  const addrEl = document.getElementById("headerWalletAddress");
+  if (!addrEl || !window.ethereum) return;
+  try {
+    const accounts = await window.ethereum.request({ method: "eth_accounts" });
+    if (accounts && accounts.length > 0) addrEl.textContent = shortAddr(accounts[0]);
+  } catch (e) {
+    /* ignore */
+  }
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  loadResults();
+  bvRenderWalletHeader();
+
+  const winnerCard = document.querySelector(".winner-gradient");
+  if (winnerCard) {
+    winnerCard.addEventListener("mousemove", (e) => {
+      const rect = winnerCard.getBoundingClientRect();
+      winnerCard.style.setProperty("--mouse-x", `${e.clientX - rect.left}px`);
+      winnerCard.style.setProperty("--mouse-y", `${e.clientY - rect.top}px`);
+    });
+  }
+});

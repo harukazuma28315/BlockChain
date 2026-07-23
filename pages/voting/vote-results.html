@@ -50,7 +50,7 @@
               src="https://lh3.googleusercontent.com/aida-public/AB6AXuC-0F9eBmyS97S2_MILqKFeiJe9MxsNoAVbeo-v7G9Nyb3eS1R_7y62QL9H49lID6UkBFl6sIVg0eQ68QnXXsZTWK-oUDuBGpggqT3SdLPmmgIaAU_yYh4Ajnptl-TJPZd7wjm7jOfuav3zTfPXchuwkfiJvhMng0RfYQUkAeFiqZXf-xzFJb8gtCQWhpq2_0uch2W_P22VhVJeCYBYQaFLZhkUNJ653Iyi9sOr_12rJ529ADtMWEmU8MHy4lkRpyEvOtC1msGPv_E"
             />
           </div>
-          <span class="font-mono-label text-mono-label">0x742d...8F44</span>
+          <span id="headerWalletAddress" class="font-mono-label text-mono-label">Chưa kết nối</span>
         </div>
       </div>
     </header>
@@ -72,436 +72,64 @@
           <h1 class="font-headline-lg text-headline-lg mb-xs">
             Báo cáo Kết quả Bầu cử
           </h1>
-          <p class="font-body-md text-body-md text-on-surface-variant">
-            Dự án: Nâng cấp Giao thức Quản trị DAO 2024
+          <p id="rsElectionTitle" class="font-body-md text-body-md text-on-surface-variant">
+            Đang tải dữ liệu từ Smart Contract...
           </p>
         </div>
         <div
+          id="rsStatusBadge"
           class="flex items-center gap-sm bg-surface-container-high px-md py-sm rounded-lg border border-outline-variant"
         >
-          <span class="w-2.5 h-2.5 rounded-full bg-neutral-400"></span>
-          <span class="font-label-md text-label-md">Bầu cử đã kết thúc</span>
+          <span class="w-2 h-2 rounded-full bg-outline"></span>
+          <span class="font-label-md text-label-md">--</span>
         </div>
       </div>
-      <div class="bento-grid">
-        <!-- Hero Winner Card -->
-        <div
-          class="col-span-12 lg:col-span-8 relative overflow-hidden rounded-xl winner-gradient p-xl flex flex-col md:flex-row items-center gap-xl text-on-primary shadow-lg border border-primary-container"
-        >
-          <div class="flex-1 z-20">
-            <div
-              class="inline-flex items-center gap-xs bg-white/20 px-md py-xs rounded-full mb-md backdrop-blur-md"
-            >
-              <span
-                class="material-symbols-outlined text-sm"
-                style="font-variation-settings: &quot;FILL&quot; 1"
-                >stars</span
-              >
-              <span class="font-label-md text-label-md uppercase tracking-wider"
-                >Người chiến thắng</span
-              >
-            </div>
-            <h2 class="font-display-lg text-display-lg mb-sm">
-              Phạm Minh Hoàng
-            </h2>
-            <p class="font-body-lg text-body-lg opacity-90 mb-lg max-w-md">
-              Đã nhận được sự tin tưởng tuyệt đối với đa số phiếu bầu, dẫn dắt
-              lộ trình phát triển kỹ thuật trong giai đoạn tới.
-            </p>
-            <div class="grid grid-cols-2 gap-lg">
-              <div>
-                <p class="font-label-md text-label-md opacity-70 uppercase">
-                  Tổng số phiếu
-                </p>
-                <p class="font-headline-md text-headline-md">
-                  1,284,050 <span class="text-sm font-normal">VOTE</span>
-                </p>
-              </div>
-              <div>
-                <p class="font-label-md text-label-md opacity-70 uppercase">
-                  Tỷ lệ áp đảo
-                </p>
-                <p class="font-headline-md text-headline-md">58.4%</p>
-              </div>
-            </div>
+
+      <!-- Winner Card -->
+      <div
+        id="rsWinnerCard"
+        class="winner-gradient rounded-xl p-xl mb-xl relative overflow-hidden bg-gradient-to-br from-primary to-secondary-container text-on-primary"
+      >
+        <p class="font-label-md text-label-md opacity-80 mb-xs">
+          ỨNG VIÊN DẪN ĐẦU
+        </p>
+        <h2 id="rsWinnerName" class="font-headline-lg text-headline-lg mb-sm">--</h2>
+        <p id="rsWinnerDesc" class="font-body-md text-body-md opacity-90 max-w-xl mb-lg">--</p>
+        <div class="flex items-center gap-lg flex-wrap">
+          <div>
+            <p id="rsWinnerVotes" class="font-headline-lg text-headline-lg">0</p>
+            <p class="font-body-sm text-body-sm opacity-80">Số phiếu bầu</p>
           </div>
-          <div
-            class="relative z-20 w-48 h-48 md:w-64 md:h-64 flex-shrink-0 group"
-          >
-            <div
-              class="absolute inset-0 bg-white/10 rounded-full blur-2xl group-hover:bg-white/20 transition-all duration-500"
-            ></div>
-            <img
-              class="w-full h-full object-cover rounded-full border-4 border-white/30 shadow-2xl relative z-10"
-              data-alt="A professional, high-definition portrait of a visionary Asian male leader in his late 30s. He is wearing a minimalist dark business suit. The background is a sophisticated corporate office with soft ambient Indigo lighting, matching the modern Web3 UI aesthetic."
-              src="https://lh3.googleusercontent.com/aida-public/AB6AXuDr0td9fjFhLyFG4y64h1ZqRI9MaA-EBLH-QMVUb1LSd6sgJN8UB7a_HXxsgWVobfJkM9JzOXhzwBYXSYr3wcGADebcnj_xGlps8mXpCUgJ9EmewTSeVZAiGRMuBxRkWTcEUdDN59nbuAyeaKouUpJnGUNQw287S8p-Am62HxMLpIHnbAKiwFkjnKANAN3L8TnHtSBjHE-WR96_tzKW0TxH4KoVDHFVjLOon45RA__oQebeE3BhzgUOsmNWUbXoSTTLg609LD63KCA"
-            />
-          </div>
-          <!-- Animated elements -->
-          <div
-            class="absolute top-0 right-0 w-full h-full opacity-30 pointer-events-none"
-          ></div>
-        </div>
-        <!-- Stats Summary -->
-        <div class="col-span-12 lg:col-span-4 flex flex-col gap-lg">
-          <div
-            class="bg-white border border-outline-variant p-lg rounded-xl shadow-sm hover:shadow-md transition-all"
-          >
-            <div class="flex items-center justify-between mb-md">
-              <span
-                class="material-symbols-outlined text-primary p-sm bg-primary-fixed rounded-lg"
-                >how_to_reg</span
-              >
-              <span class="text-primary font-label-md text-label-md"
-                >+12.4% vs 2023</span
-              >
-            </div>
-            <p
-              class="font-body-sm text-body-sm text-on-surface-variant uppercase tracking-wide"
-            >
-              Tổng cử tri tham gia
-            </p>
-            <h3 class="font-headline-lg text-headline-lg mt-xs">2,198,500</h3>
-          </div>
-          <div
-            class="bg-white border border-outline-variant p-lg rounded-xl shadow-sm hover:shadow-md transition-all"
-          >
-            <div class="flex items-center justify-between mb-md">
-              <span
-                class="material-symbols-outlined text-tertiary p-sm bg-tertiary-fixed rounded-lg"
-                >speed</span
-              >
-              <span class="text-tertiary font-label-md text-label-md"
-                >On-chain Validated</span
-              >
-            </div>
-            <p
-              class="font-body-sm text-body-sm text-on-surface-variant uppercase tracking-wide"
-            >
-              Thời gian phản hồi TB
-            </p>
-            <h3 class="font-headline-lg text-headline-lg mt-xs">1.2s</h3>
+          <div>
+            <p id="rsWinnerPct" class="font-headline-lg text-headline-lg">0%</p>
+            <p class="font-body-sm text-body-sm opacity-80">Tỷ lệ ủng hộ</p>
           </div>
         </div>
-        <!-- Comparison Bar Chart -->
-        <div
-          class="col-span-12 lg:col-span-7 bg-white border border-outline-variant p-lg rounded-xl shadow-sm"
-        >
-          <div class="flex items-center justify-between mb-lg">
-            <h3 class="font-headline-md text-headline-md">So sánh phiếu bầu</h3>
-          </div>
-          <div class="flex flex-col gap-lg mt-xl">
-            <!-- Bar Item 1 -->
-            <div>
-              <div class="flex justify-between mb-xs">
-                <span class="font-label-md text-label-md">Phạm Minh Hoàng</span>
-                <span class="font-label-md text-label-md"
-                  >1,284,050 (58.4%)</span
-                >
-              </div>
-              <div
-                class="w-full h-4 bg-surface-container rounded-full overflow-hidden"
-              >
-                <div
-                  class="h-full bg-primary-container rounded-full"
-                  style="width: 58.4%"
-                ></div>
-              </div>
-            </div>
-            <!-- Bar Item 2 -->
-            <div>
-              <div class="flex justify-between mb-xs">
-                <span class="font-label-md text-label-md">Lê Thu Thủy</span>
-                <span class="font-label-md text-label-md">615,580 (28.0%)</span>
-              </div>
-              <div
-                class="w-full h-4 bg-surface-container rounded-full overflow-hidden"
-              >
-                <div
-                  class="h-full bg-secondary-container rounded-full"
-                  style="width: 28%"
-                ></div>
-              </div>
-            </div>
-            <!-- Bar Item 3 -->
-            <div>
-              <div class="flex justify-between mb-xs">
-                <span class="font-label-md text-label-md">Trần Văn Nam</span>
-                <span class="font-label-md text-label-md">298,870 (13.6%)</span>
-              </div>
-              <div
-                class="w-full h-4 bg-surface-container rounded-full overflow-hidden"
-              >
-                <div
-                  class="h-full bg-surface-dim rounded-full"
-                  style="width: 13.6%"
-                ></div>
-              </div>
-            </div>
-          </div>
+      </div>
+
+      <!-- Summary stats -->
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-lg mb-xl">
+        <div class="bg-surface-container-low border border-outline-variant rounded-xl p-lg">
+          <p class="font-body-sm text-body-sm text-on-surface-variant mb-xs">Tổng số phiếu đã bầu</p>
+          <p id="rsTotalVotes" class="font-headline-lg text-headline-lg text-on-surface">0</p>
         </div>
-        <!-- Participation Pie Chart -->
-        <div
-          class="col-span-12 lg:col-span-5 bg-white border border-outline-variant p-lg rounded-xl shadow-sm flex flex-col items-center"
-        >
-          <div class="w-full flex items-center justify-between mb-lg">
-            <h3 class="font-headline-md text-headline-md">Tỷ lệ cử tri</h3>
-          </div>
-          <div class="relative w-48 h-48 mb-lg mt-md">
-            <svg class="w-full h-full transform -rotate-90">
-              <circle
-                class="text-surface-container"
-                cx="96"
-                cy="96"
-                fill="transparent"
-                r="80"
-                stroke="currentColor"
-                stroke-width="24"
-              ></circle>
-              <circle
-                class="text-primary"
-                cx="96"
-                cy="96"
-                fill="transparent"
-                r="80"
-                stroke="currentColor"
-                stroke-dasharray="502.65"
-                stroke-dashoffset="125.66"
-                stroke-width="24"
-              ></circle>
-            </svg>
-            <div
-              class="absolute inset-0 flex flex-col items-center justify-center"
-            >
-              <span class="font-headline-md text-headline-md">75%</span>
-              <span class="font-body-sm text-body-sm text-on-surface-variant"
-                >Tham gia</span
-              >
-            </div>
-          </div>
-          <div class="grid grid-cols-2 gap-lg w-full mt-md">
-            <div class="flex items-center gap-sm">
-              <div class="w-3 h-3 rounded-full bg-primary"></div>
-              <div>
-                <p class="font-label-md text-label-md">Đã bầu chọn</p>
-                <p class="font-body-sm text-body-sm opacity-60">2.19M</p>
-              </div>
-            </div>
-            <div class="flex items-center gap-sm">
-              <div class="w-3 h-3 rounded-full bg-surface-container"></div>
-              <div>
-                <p class="font-label-md text-label-md">Vắng mặt</p>
-                <p class="font-body-sm text-body-sm opacity-60">732K</p>
-              </div>
-            </div>
-          </div>
+        <div class="bg-surface-container-low border border-outline-variant rounded-xl p-lg">
+          <p class="font-body-sm text-body-sm text-on-surface-variant mb-xs">Tổng số cử tri đăng ký</p>
+          <p id="rsTotalVoters" class="font-headline-lg text-headline-lg text-on-surface">0</p>
         </div>
-        <!-- Detailed Ranking Table -->
-        <div
-          class="col-span-12 bg-white border border-outline-variant rounded-xl shadow-sm overflow-hidden"
-        >
-          <div
-            class="p-lg border-b border-outline-variant flex justify-between items-center bg-surface-bright"
-          >
-            <h3 class="font-headline-md text-headline-md">
-              Bảng xếp hạng chi tiết
-            </h3>
-          </div>
-          <div class="overflow-x-auto">
-            <table class="w-full text-left">
-              <thead>
-                <tr
-                  class="bg-surface-container-low border-b border-outline-variant"
-                >
-                  <th
-                    class="px-lg py-md font-label-md text-label-md uppercase text-on-surface-variant"
-                  >
-                    Thứ hạng
-                  </th>
-                  <th
-                    class="px-lg py-md font-label-md text-label-md uppercase text-on-surface-variant"
-                  >
-                    Ứng viên
-                  </th>
-                  <th
-                    class="px-lg py-md font-label-md text-label-md uppercase text-on-surface-variant"
-                  >
-                    Số phiếu nhận
-                  </th>
-                  <th
-                    class="px-lg py-md font-label-md text-label-md uppercase text-on-surface-variant"
-                  >
-                    Tỷ lệ %
-                  </th>
-                  <th
-                    class="px-lg py-md font-label-md text-label-md uppercase text-on-surface-variant"
-                  >
-                    Trạng thái
-                  </th>
-                </tr>
-              </thead>
-              <tbody class="divide-y divide-outline-variant">
-                <tr class="hover:bg-surface-container-low transition-colors">
-                  <td class="px-lg py-lg">
-                    <div
-                      class="w-8 h-8 rounded-full bg-primary-fixed flex items-center justify-center font-bold text-primary"
-                    >
-                      1
-                    </div>
-                  </td>
-                  <td class="px-lg py-lg">
-                    <div class="flex items-center gap-md">
-                      <div
-                        class="w-10 h-10 rounded-full overflow-hidden border border-outline-variant"
-                      >
-                        <img
-                          class="w-full h-full object-cover"
-                          data-alt="Close-up professional portrait of Pham Minh Hoang, an Asian male leader with short black hair, wearing a high-quality navy blazer, presenting a modern, reliable image consistent with Web3 corporate standards."
-                          src="https://lh3.googleusercontent.com/aida-public/AB6AXuDKuBtlcFWByxJruFwTn2utWpoPpHAkLJvRxrpGhsW1xG73lavIhWS8RQgW-TxQ6H1-LSCv67ZRhyowKRR_X3CGFXlqMIX9etitTzgkg0SlAqqWhFiSljGh_sy7YGsMbeHkFQMKkEwa3SgjbAduULKJFPLWcEbzrhhuliTNZf6o69aTPX5gqe_3Rw_FlweQYcsOUddYXnsx503pdBGfPth4gYamcfHW8wwN8wteC_0mYZTlKt_c5a0z4kAx-x5suox0ZVSg0QZPL6I"
-                        />
-                      </div>
-                      <div>
-                        <p class="font-label-md text-label-md">
-                          Phạm Minh Hoàng
-                        </p>
-                        <p
-                          class="font-body-sm text-body-sm text-on-surface-variant"
-                        >
-                          ID: 0x882...1a9e
-                        </p>
-                      </div>
-                    </div>
-                  </td>
-                  <td class="px-lg py-lg font-mono-label text-mono-label">
-                    1,284,050
-                  </td>
-                  <td class="px-lg py-lg">
-                    <div class="flex items-center gap-md">
-                      <span class="font-label-md text-label-md">58.4%</span>
-                      <div
-                        class="flex-1 min-w-[100px] h-2 bg-surface-container rounded-full"
-                      >
-                        <div
-                          class="h-full bg-primary rounded-full"
-                          style="width: 58.4%"
-                        ></div>
-                      </div>
-                    </div>
-                  </td>
-                  <td class="px-lg py-lg">
-                    <span
-                      class="px-md py-xs bg-primary-container text-on-primary-container text-xs rounded-full font-bold uppercase"
-                      >Đắc cử</span
-                    >
-                  </td>
-                </tr>
-                <tr class="hover:bg-surface-container-low transition-colors">
-                  <td class="px-lg py-lg">
-                    <div
-                      class="w-8 h-8 rounded-full bg-surface-container flex items-center justify-center font-bold text-on-surface-variant"
-                    >
-                      2
-                    </div>
-                  </td>
-                  <td class="px-lg py-lg">
-                    <div class="flex items-center gap-md">
-                      <div
-                        class="w-10 h-10 rounded-full overflow-hidden border border-outline-variant"
-                      >
-                        <img
-                          class="w-full h-full object-cover"
-                          data-alt="A professional portrait of Le Thu Thuy, a sophisticated Asian female professional in her 30s. She is wearing a cream-colored minimalist blouse, standing in a brightly lit modern office environment with soft focus on the background technology screens."
-                          src="https://lh3.googleusercontent.com/aida-public/AB6AXuAAGRPeglVqBdpK4HEM65M78zvBFYpvWi7OmYdyAeJU_LyncnE2Hp1SFnNV4UIdM0R5uPM67ZiJYFr4eMiumeYwWWlvrvClJasIgm_Ie2smslfY1TSrS0ztShyp3whzyK6dvfQuGxst4MEgAvj3IA-Cbjj_3ow_5DbCyBg4AM9VqFbBIjTsg7CmXRo5XyulfApNUrk02QK3-R056DNDt5kfn4EZnONrRLcWMYlnTTg3n4R1ttly694vjmy7ziVjZmG_7hrJLCQtFcY"
-                        />
-                      </div>
-                      <div>
-                        <p class="font-label-md text-label-md">Lê Thu Thủy</p>
-                        <p
-                          class="font-body-sm text-body-sm text-on-surface-variant"
-                        >
-                          ID: 0x221...4f33
-                        </p>
-                      </div>
-                    </div>
-                  </td>
-                  <td class="px-lg py-lg font-mono-label text-mono-label">
-                    615,580
-                  </td>
-                  <td class="px-lg py-lg">
-                    <div class="flex items-center gap-md">
-                      <span class="font-label-md text-label-md">28.0%</span>
-                      <div
-                        class="flex-1 min-w-[100px] h-2 bg-surface-container rounded-full"
-                      >
-                        <div
-                          class="h-full bg-secondary rounded-full"
-                          style="width: 28%"
-                        ></div>
-                      </div>
-                    </div>
-                  </td>
-                  <td class="px-lg py-lg">
-                    <span
-                      class="px-md py-xs bg-surface-container text-on-surface-variant text-xs rounded-full font-bold uppercase"
-                      >Á quân</span
-                    >
-                  </td>
-                </tr>
-                <tr class="hover:bg-surface-container-low transition-colors">
-                  <td class="px-lg py-lg">
-                    <div
-                      class="w-8 h-8 rounded-full bg-surface-container flex items-center justify-center font-bold text-on-surface-variant"
-                    >
-                      3
-                    </div>
-                  </td>
-                  <td class="px-lg py-lg">
-                    <div class="flex items-center gap-md">
-                      <div
-                        class="w-10 h-10 rounded-full overflow-hidden border border-outline-variant"
-                      >
-                        <img
-                          class="w-full h-full object-cover"
-                          data-alt="A professional portrait of Tran Van Nam, an Asian male expert in his 40s. He has a calm and focused expression, wearing a gray professional polo shirt. The scene is lit with cool daylight in a clean, high-tech research facility setting."
-                          src="https://lh3.googleusercontent.com/aida-public/AB6AXuCRSxwRHVSnJioNteDzjoBVJMCQ6UwZAcKacLwvoyhq0FZSC_R_izMiB1hT_1EhODCnWl5wpsf2ocBcvj9lpN3ACC7kxWg-VEQceLRLp2Zlb99BT0hG_TVmz3o_gZCruxNv48INbbbr59RZastCIukr05lDmlFkaFdsJIGxx63ny70qQn4cYDbKMXnBTH3XqoEIijr-Maxq3ubR0PSzCUFP3blsvDQ_yvh6qn-ywRTPaG4xN4RRX2dwY1dnEXbLUDOYqnYraohikzI"
-                        />
-                      </div>
-                      <div>
-                        <p class="font-label-md text-label-md">Trần Văn Nam</p>
-                        <p
-                          class="font-body-sm text-body-sm text-on-surface-variant"
-                        >
-                          ID: 0x5a1...99bb
-                        </p>
-                      </div>
-                    </div>
-                  </td>
-                  <td class="px-lg py-lg font-mono-label text-mono-label">
-                    298,870
-                  </td>
-                  <td class="px-lg py-lg">
-                    <div class="flex items-center gap-md">
-                      <span class="font-label-md text-label-md">13.6%</span>
-                      <div
-                        class="flex-1 min-w-[100px] h-2 bg-surface-container rounded-full"
-                      >
-                        <div
-                          class="h-full bg-outline rounded-full"
-                          style="width: 13.6%"
-                        ></div>
-                      </div>
-                    </div>
-                  </td>
-                  <td class="px-lg py-lg">
-                    <span
-                      class="px-md py-xs bg-surface-container text-on-surface-variant text-xs rounded-full font-bold uppercase"
-                      >Kết thúc</span
-                    >
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
+        <div class="bg-surface-container-low border border-outline-variant rounded-xl p-lg">
+          <p class="font-body-sm text-body-sm text-on-surface-variant mb-xs">Tỷ lệ tham gia</p>
+          <p id="rsTurnout" class="font-headline-lg text-headline-lg text-on-surface">0%</p>
+        </div>
+      </div>
+
+      <!-- Ranking table -->
+      <div class="bg-surface-container-low border border-outline-variant rounded-xl overflow-hidden">
+        <div class="px-lg py-md border-b border-outline-variant">
+          <h3 class="font-headline-md text-headline-md text-on-surface">Bảng xếp hạng toàn bộ ứng viên</h3>
+        </div>
+        <div id="rsRankingList" class="divide-y divide-outline-variant">
+          <p class="p-lg text-center text-on-surface-variant">Đang tải...</p>
         </div>
       </div>
     </main>
@@ -543,6 +171,6 @@
       </a>
     </aside>
 
-    <script src="../../JS/vote-results.js" defer></script>
+    <script src="../../JS/vote-results.js" type="module" defer></script>
   </body>
 </html>

@@ -108,187 +108,184 @@ tailwind.config = {
   },
 };
 
-/* =========================================================================
-   TRANG ĐIỀU KHIỂN CUỘC BẦU CỬ — tích hợp ethers.js
-   Chuyển trạng thái cuộc bầu cử hiện hành: Mở đăng ký -> Mở xác thực ->
-   Mở bỏ phiếu -> Kết thúc, gọi trực tiếp changeElectionStatus() trên Smart
-   Contract. Thứ tự chuyển giai đoạn được chính Smart Contract kiểm soát
-   (chỉ cho phép tiến từng bước một, không cho nhảy cóc).
-   ========================================================================= */
+// ====================== ADMIN-SYSTEM-CONTROL.JS ======================
+// Trang Điều khiển cuộc bầu cử — tích hợp THẬT với Smart Contract.
+// Chuyển trạng thái: contract.changeElectionStatus(electionId, newStatusEnum)
+// Contract chỉ cho phép trạng thái mới = trạng thái hiện tại + 1 (đúng thứ
+// tự Pending -> Registration -> Verification -> Voting -> Ended), khớp
+// hoàn toàn với luồng 4 giai đoạn của giao diện này.
+import { getContract, getReadContract } from "./blockchain.js";
+import { initAdminWallet, toast, runTx } from "./admin-common.js";
 import {
-  initAdminPage,
-  getContract,
-  getProvider,
-  guardAdmin,
+  getActiveElectionId,
+  getElectionPlain,
+  getAllVotersPlain,
+  fetchAllEvents,
+  describeEvent,
   shortAddr,
-  fetchCurrentElection,
-  fetchCandidates,
-  fetchVoters,
-  fetchAllTransactions,
-  statusKeyFromEnum,
-} from "./admin-common.js";
+  statusEnumFromKey,
+} from "./election-utils.js";
+
+let activeElectionId = null;
 
 const BV_STAGES = [
   {
     key: "registration",
-    enumValue: 1,
     label: "Mở đăng ký",
     icon: "how_to_reg",
     desc: "Cho phép cử tri và ứng viên đăng ký tham gia cuộc bầu cử.",
   },
   {
     key: "verification",
-    enumValue: 2,
     label: "Mở xác thực",
     icon: "verified_user",
     desc: "Admin xác thực danh sách cử tri và ứng viên hợp lệ.",
   },
   {
     key: "voting",
-    enumValue: 3,
     label: "Mở bỏ phiếu",
     icon: "how_to_vote",
     desc: "Kích hoạt hợp đồng thông minh, cho phép cử tri bỏ phiếu.",
   },
   {
     key: "ended",
-    enumValue: 4,
     label: "Kết thúc bỏ phiếu",
     icon: "stop_circle",
     desc: "Đóng cổng bình chọn và chốt kết quả cuối cùng trên chuỗi.",
   },
 ];
 
-function bvStageIndex(status) {
+function bvStageIndex(statusKey) {
   const order = ["draft", "registration", "verification", "voting", "ended"];
-  return order.indexOf(status);
+  return order.indexOf(statusKey);
 }
 
-let currentElection = null;
-
-async function loadData() {
+async function loadControlPage() {
   const contract = getContract();
-  if (!contract) {
-    currentElection = null;
-    return { candidates: [], voters: [] };
-  }
-  const [election, candidates, voters] = await Promise.all([
-    fetchCurrentElection(contract),
-    fetchCandidates(contract),
-    fetchVoters(contract),
-  ]);
-  currentElection = election;
-  return { candidates, voters };
-}
-
-async function renderControl() {
   const set = (id, val) => {
     const el = document.getElementById(id);
     if (el) el.textContent = val;
   };
 
-  const { candidates, voters } = await loadData();
+  if (!contract) {
+    set("election-name-display", "Kết nối ví Admin để tải dữ liệu...");
+    return;
+  }
 
-  set(
-    "election-name-display",
-    currentElection ? currentElection.title : "Chưa có cuộc bầu cử",
-  );
+  activeElectionId = await getActiveElectionId(contract);
+  if (activeElectionId === null) {
+    set("election-name-display", 'Chưa có cuộc bầu cử nào. Hãy tạo ở trang "Quản lý bầu cử".');
+    const stagesEl = document.getElementById("stage-controls");
+    if (stagesEl) stagesEl.innerHTML = "";
+    return;
+  }
 
+  const [election, voters, provider] = await Promise.all([
+    getElectionPlain(contract, activeElectionId),
+    getAllVotersPlain(contract),
+    Promise.resolve(contract.provider ?? contract.runner?.provider),
+  ]);
+
+  set("election-name-display", election.title);
   const statusIcon = {
     draft: "⚪",
     registration: "🟠",
     verification: "🔵",
     voting: "🟢",
     ended: "⚫",
-  };
+  }[election.statusKey];
   const statusText = {
     draft: "Chưa khởi tạo",
     registration: "Đang mở đăng ký",
     verification: "Đang xác thực",
     voting: "Đang bỏ phiếu",
     ended: "Đã kết thúc",
-  };
-  const currentStatus = currentElection ? currentElection.status : "draft";
-  set(
-    "current-status-label",
-    `${statusIcon[currentStatus]} ${statusText[currentStatus]}`,
-  );
+  }[election.statusKey];
+  set("current-status-label", `${statusIcon} ${statusText}`);
 
-  const totalVotes = candidates.reduce((s, c) => s + (c.votes || 0), 0);
+  const totalVotes = Number(await contract.totalVotes(activeElectionId));
   const turnout = voters.length
     ? ((totalVotes / voters.length) * 100).toFixed(1)
     : "0.0";
   set("rt-total-votes", totalVotes.toLocaleString("vi-VN"));
   set("rt-turnout", `${turnout}%`);
 
-  const provider = getProvider();
   if (provider) {
     try {
       const blockNumber = await provider.getBlockNumber();
       set("rt-block", "#" + blockNumber.toLocaleString("vi-VN"));
     } catch (e) {
-      set("rt-block", "—");
+      /* ignore */
     }
   }
 
-  const progressMap = { draft: 5, registration: 30, verification: 55, voting: 80, ended: 100 };
+  const progressMap = {
+    draft: 5,
+    registration: 30,
+    verification: 55,
+    voting: 80,
+    ended: 100,
+  };
   const progressEl = document.getElementById("stage-progress-bar");
   const progressLabel = document.getElementById("stage-progress-label");
-  const pct = progressMap[currentStatus] ?? 5;
+  const pct = progressMap[election.statusKey] ?? 5;
   if (progressEl) progressEl.style.width = pct + "%";
   if (progressLabel) progressLabel.textContent = pct + "% hoàn thành";
 
   const stagesEl = document.getElementById("stage-controls");
-  const currentIdx = bvStageIndex(currentStatus);
+  const currentIdx = bvStageIndex(election.statusKey);
   if (stagesEl) {
-    if (!currentElection) {
-      stagesEl.innerHTML = `<p class="col-span-full text-center text-on-surface-variant font-body-sm text-body-sm p-lg">Chưa có cuộc bầu cử nào được tạo. Vui lòng tạo cuộc bầu cử ở trang "Quản lý bầu cử" trước.</p>`;
-    } else {
-      stagesEl.innerHTML = BV_STAGES.map((stage, i) => {
-        const stageIdx = i + 1;
-        const isDone = stageIdx < currentIdx;
-        const isCurrent = stageIdx === currentIdx;
-        const isNext = stageIdx === currentIdx + 1;
-        const isLocked = !isNext && !isCurrent && !isDone;
-        const isEndedStage = stage.key === "ended";
+    stagesEl.innerHTML = BV_STAGES.map((stage, i) => {
+      const stageIdx = i + 1;
+      const isDone =
+        stageIdx < currentIdx ||
+        (election.statusKey === "ended" && stageIdx <= currentIdx);
+      const isCurrent = stageIdx === currentIdx;
+      const isNext = stageIdx === currentIdx + 1;
+      const isLocked = !isNext && !isCurrent && !isDone;
+      const isEndedStage = stage.key === "ended";
 
-        let btnHtml;
-        if ((isDone || isCurrent) && !isNext) {
-          btnHtml = `<button disabled class="w-full py-md bg-primary-fixed text-primary font-label-md text-label-md rounded-xl flex items-center justify-center gap-sm cursor-default">
-              <span class="material-symbols-outlined">check_circle</span> Đã hoàn tất</button>`;
-        } else if (isNext) {
-          btnHtml = `<button data-admin-only onclick="bvSetStage(${stage.enumValue})" class="w-full py-md ${isEndedStage ? "bg-error text-on-error hover:bg-[#a11717]" : "bg-primary text-on-primary hover:bg-on-primary-fixed-variant"} font-label-md text-label-md rounded-xl active:scale-95 transition-all shadow-md flex items-center justify-center gap-sm">
-              <span class="material-symbols-outlined">${stage.icon}</span> ${stage.label}</button>`;
-        } else {
-          btnHtml = `<button disabled class="w-full py-md bg-outline-variant text-on-surface-variant font-label-md text-label-md rounded-xl cursor-not-allowed flex items-center justify-center gap-sm">
-              <span class="material-symbols-outlined">${stage.icon}</span> ${stage.label}</button>`;
-        }
+      let btnHtml;
+      if (isDone && !isCurrent) {
+        btnHtml = `<button disabled class="w-full py-md bg-primary-fixed text-primary font-label-md text-label-md rounded-xl flex items-center justify-center gap-sm cursor-default">
+            <span class="material-symbols-outlined">check_circle</span> Đã hoàn tất</button>`;
+      } else if (isNext) {
+        btnHtml = `<button data-admin-only onclick="bvSetStage('${stage.key}')" class="w-full py-md ${isEndedStage ? "bg-error text-on-error hover:bg-[#a11717]" : "bg-primary text-on-primary hover:bg-on-primary-fixed-variant"} font-label-md text-label-md rounded-xl active:scale-95 transition-all shadow-md flex items-center justify-center gap-sm">
+            <span class="material-symbols-outlined">${stage.icon}</span> ${stage.label}</button>`;
+      } else {
+        btnHtml = `<button disabled class="w-full py-md bg-outline-variant text-on-surface-variant font-label-md text-label-md rounded-xl cursor-not-allowed flex items-center justify-center gap-sm">
+            <span class="material-symbols-outlined">${stage.icon}</span> ${stage.label}</button>`;
+      }
 
-        return `
-        <div class="p-lg ${isEndedStage ? "bg-surface border-2 border-error-container" : "bg-surface-container-low border border-outline-variant"} rounded-xl flex flex-col justify-between ${isLocked ? "opacity-60" : ""}">
-          <div>
-            <div class="flex justify-between items-start mb-xs">
-              <h3 class="font-label-md text-label-md">Giai đoạn ${stageIdx}: ${stage.label}</h3>
-              ${isEndedStage ? '<span class="px-sm py-[2px] bg-error-container text-on-error-container text-[10px] font-bold rounded-full uppercase tracking-wider">Khẩn cấp</span>' : ""}
-            </div>
-            <p class="font-body-sm text-body-sm text-on-surface-variant mb-lg">${stage.desc}</p>
+      return `
+      <div class="p-lg ${isEndedStage ? "bg-surface border-2 border-error-container" : "bg-surface-container-low border border-outline-variant"} rounded-xl flex flex-col justify-between ${isLocked ? "opacity-60" : ""}">
+        <div>
+          <div class="flex justify-between items-start mb-xs">
+            <h3 class="font-label-md text-label-md">Giai đoạn ${stageIdx}: ${stage.label}</h3>
+            ${isEndedStage ? '<span class="px-sm py-[2px] bg-error-container text-on-error-container text-[10px] font-bold rounded-full uppercase tracking-wider">Khẩn cấp</span>' : ""}
           </div>
-          ${btnHtml}
-        </div>`;
-      }).join("");
-    }
+          <p class="font-body-sm text-body-sm text-on-surface-variant mb-lg">${stage.desc}</p>
+        </div>
+        ${btnHtml}
+      </div>`;
+    }).join("");
   }
 
+  // Nhật ký thao tác on-chain gần đây (đọc trực tiếp từ event log của contract)
   const logEl = document.getElementById("control-log-list");
   if (logEl) {
-    logEl.innerHTML = `<p class="font-body-sm text-body-sm text-on-surface-variant p-lg">Đang tải nhật ký on-chain...</p>`;
-    const contract = getContract();
-    const provider = getProvider();
-    const logs = contract && provider ? await fetchAllTransactions(contract, provider, 6) : [];
-    logEl.innerHTML = logs.length
-      ? logs
-          .map(
-            (tx, i) => `
+    logEl.innerHTML = `<p class="font-body-sm text-body-sm text-on-surface-variant p-lg">Đang tải log từ blockchain...</p>`;
+    try {
+      const readContract = getReadContract();
+      const events = await fetchAllEvents(readContract, 6);
+      const readProvider = readContract.provider ?? readContract.runner?.provider;
+      const logs = await Promise.all(
+        events.map((ev) => describeEvent(ev, readProvider)),
+      );
+      logEl.innerHTML = logs.length
+        ? logs
+            .map(
+              (tx, i) => `
       <div class="flex gap-md group">
         <div class="flex flex-col items-center">
           <div class="w-8 h-8 rounded-full bg-secondary-container/20 flex items-center justify-center text-secondary border border-secondary/20">
@@ -304,42 +301,50 @@ async function renderControl() {
           <p class="font-body-sm text-body-sm text-on-surface-variant">Ví: <code class="bg-surface-container px-sm py-[2px] rounded text-primary">${shortAddr(tx.wallet)}</code></p>
         </div>
       </div>`,
-          )
-          .join("")
-      : `<p class="font-body-sm text-body-sm text-on-surface-variant p-lg">Chưa có thao tác nào được ghi nhận.</p>`;
+            )
+            .join("")
+        : `<p class="font-body-sm text-body-sm text-on-surface-variant p-lg">Chưa có thao tác nào được ghi nhận.</p>`;
+    } catch (err) {
+      console.error(err);
+      logEl.innerHTML = `<p class="font-body-sm text-body-sm text-on-surface-variant p-lg">Không tải được log on-chain.</p>`;
+    }
   }
-
-  guardAdmin();
 }
 
-window.bvSetStage = async function (enumValue) {
-  const contract = getContract();
-  if (!guardAdmin() || !contract || !currentElection) {
-    alert("Bạn cần kết nối ví Admin và có cuộc bầu cử hợp lệ để thực hiện thao tác này.");
-    return;
-  }
+window.bvSetStage = async function bvSetStage(stageKey) {
+  const labelMap = {
+    registration: "Mở đăng ký",
+    verification: "Mở xác thực",
+    voting: "Mở bỏ phiếu",
+    ended: "Kết thúc bỏ phiếu",
+  };
   if (
-    enumValue === 4 &&
+    stageKey === "ended" &&
     !confirm(
       "Kết thúc bầu cử sẽ chốt kết quả vĩnh viễn trên blockchain và không thể hoàn tác. Tiếp tục?",
     )
   ) {
     return;
   }
-  try {
-    const tx = await contract.changeElectionStatus(currentElection.id, enumValue);
-    await tx.wait();
-    await renderControl();
-  } catch (err) {
-    console.error(err);
-    alert("Giao dịch thất bại: " + (err.reason || err.message || "Không xác định"));
-  }
+  if (activeElectionId === null) return;
+
+  const receipt = await runTx(
+    () =>
+      getContract().changeElectionStatus(
+        activeElectionId,
+        statusEnumFromKey(stageKey),
+      ),
+    {
+      pendingMsg: `Đang gửi giao dịch "${labelMap[stageKey]}" lên blockchain...`,
+      successMsg: `${labelMap[stageKey]} thành công (đã ghi on-chain).`,
+    },
+  );
+  if (receipt) await loadControlPage();
 };
 
 document.addEventListener("DOMContentLoaded", async () => {
-  await initAdminPage((state) => {
-    if (state.connected) renderControl();
-  });
+  await initAdminWallet();
+  await loadControlPage();
 
   document.querySelectorAll(".group").forEach((item) => {
     item.addEventListener("mouseenter", () => {
@@ -351,4 +356,6 @@ document.addEventListener("DOMContentLoaded", async () => {
       if (icon) icon.style.transform = "scale(1)";
     });
   });
+
+  window.addEventListener("bv:wallet-ready", loadControlPage);
 });

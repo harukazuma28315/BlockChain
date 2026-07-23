@@ -108,54 +108,68 @@ tailwind.config = {
   },
 };
 
-/* =========================================================================
-   TRANG QUẢN LÝ ỨNG VIÊN — tích hợp ethers.js
-   Thêm ứng viên (addCandidate) vào cuộc bầu cử hiện hành, Xác thực ứng viên
-   (verifyCandidate). Contract không hỗ trợ sửa/xóa ứng viên nên các thao
-   tác này không còn xuất hiện trên giao diện.
-   ========================================================================= */
+// ====================== ADMIN-CANDIDATE-MANAGEMENT.JS ======================
+// Trang Quản lý ứng viên — tích hợp THẬT với Smart Contract qua ethers.js.
+// Chức năng khớp với những gì contract hỗ trợ:
+//   - Thêm ứng viên vào cuộc bầu cử hiện hành: contract.addCandidate(...)
+//   - Xác thực ứng viên: contract.verifyCandidate(...)
+// Lưu ý: Smart Contract KHÔNG hỗ trợ sửa hoặc xóa ứng viên sau khi đã thêm
+// (đây là chủ đích thiết kế để đảm bảo tính minh bạch/không thể giả mạo của
+// dữ liệu on-chain), nên UI không còn nút "Sửa" / "Xóa" như bản demo cũ.
+import { getContract } from "./blockchain.js";
+import { initAdminWallet, guardAdmin, toast, runTx } from "./admin-common.js";
 import {
-  initAdminPage,
-  getContract,
-  guardAdmin,
+  getActiveElectionId,
+  getCandidatesForElection,
   shortAddr,
-  fetchCandidates,
-  fetchCurrentElection,
-} from "./admin-common.js";
+} from "./election-utils.js";
 
-let cachedCandidates = [];
-let currentElection = null;
+let activeElectionId = null;
+
+function setText(id, val) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = val;
+}
 
 async function loadCandidates() {
   const contract = getContract();
-  if (!contract) {
-    cachedCandidates = [];
-    currentElection = null;
-    return;
-  }
-  [cachedCandidates, currentElection] = await Promise.all([
-    fetchCandidates(contract),
-    fetchCurrentElection(contract),
-  ]);
-}
-
-function renderCandidates() {
   const tbody = document.getElementById("candidates-table-body");
   const emptyState = document.getElementById("candidates-empty-state");
   if (!tbody) return;
 
+  if (!contract) {
+    tbody.innerHTML = `<tr><td colspan="5" class="px-lg py-xl text-center text-on-surface-variant">Kết nối ví để tải dữ liệu từ Smart Contract...</td></tr>`;
+    return;
+  }
+
+  activeElectionId = await getActiveElectionId(contract);
+  if (activeElectionId === null) {
+    tbody.innerHTML = `<tr><td colspan="5" class="px-lg py-xl text-center text-on-surface-variant">Chưa có cuộc bầu cử nào được tạo. Vào trang "Quản lý bầu cử" để tạo cuộc bầu cử trước.</td></tr>`;
+    if (emptyState) emptyState.classList.add("hidden");
+    return;
+  }
+
+  let candidates;
+  try {
+    candidates = await getCandidatesForElection(contract, activeElectionId);
+  } catch (err) {
+    console.error(err);
+    toast("Không tải được danh sách ứng viên từ Smart Contract.", "error");
+    return;
+  }
+
   const term = (document.getElementById("candidate-search")?.value || "")
     .toLowerCase()
     .trim();
-  const filtered = cachedCandidates.filter(
+  const filtered = candidates.filter(
     (c) =>
-      c.name.toLowerCase().includes(term) ||
+      c.fullName.toLowerCase().includes(term) ||
       c.wallet.toLowerCase().includes(term),
   );
 
   const countEl = document.getElementById("candidates-count");
   if (countEl)
-    countEl.textContent = `Hiển thị ${filtered.length} trên tổng số ${cachedCandidates.length} ứng viên`;
+    countEl.textContent = `Hiển thị ${filtered.length} trên tổng số ${candidates.length} ứng viên`;
 
   if (emptyState) emptyState.classList.toggle("hidden", filtered.length > 0);
 
@@ -166,16 +180,16 @@ function renderCandidates() {
       <td class="px-lg py-md">
         <div class="flex items-center gap-md">
           <div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">
-            ${c.name.charAt(0).toUpperCase()}
+            ${c.fullName.charAt(0).toUpperCase()}
           </div>
           <div>
-            <p class="font-label-md text-label-md text-on-surface">${c.name}</p>
+            <p class="font-label-md text-label-md text-on-surface">${c.fullName}</p>
             <p class="font-body-sm text-body-sm text-on-surface-variant italic">${shortAddr(c.wallet)}</p>
           </div>
         </div>
       </td>
       <td class="px-lg py-md">
-        <p class="font-body-sm text-body-sm text-on-surface-variant max-w-xs line-clamp-2">${c.desc || "—"}</p>
+        <p class="font-body-sm text-body-sm text-on-surface-variant max-w-xs line-clamp-2">${c.description || "—"}</p>
       </td>
       <td class="px-lg py-md text-center">
         ${
@@ -184,12 +198,12 @@ function renderCandidates() {
             : `<span class="px-md py-1 rounded-full bg-surface-variant text-on-surface-variant font-label-md text-label-md border border-outline-variant">Chờ xác thực</span>`
         }
       </td>
-      <td class="px-lg py-md text-center font-label-md text-label-md text-on-surface">${(c.votes || 0).toLocaleString("vi-VN")} phiếu</td>
+      <td class="px-lg py-md text-center font-label-md text-label-md text-on-surface">${c.voteCount.toLocaleString("vi-VN")} phiếu</td>
       <td class="px-lg py-md text-right">
         <div class="flex items-center justify-end gap-sm">
           <button data-admin-only ${c.verified ? "disabled" : ""} onclick="bvVerifyCandidate(${c.id})"
             class="p-sm text-on-surface-variant hover:text-primary hover:bg-primary-fixed rounded-lg transition-all disabled:opacity-30 disabled:cursor-not-allowed"
-            title="Xác thực ứng viên">
+            title="Xác thực ứng viên (ghi on-chain)">
             <span class="material-symbols-outlined">verified</span>
           </button>
         </div>
@@ -201,68 +215,52 @@ function renderCandidates() {
   guardAdmin();
 }
 
-async function refreshAndRender() {
-  const tbody = document.getElementById("candidates-table-body");
-  if (tbody) {
-    tbody.innerHTML = `<tr><td colspan="5" class="px-lg py-lg text-center text-on-surface-variant font-body-sm text-body-sm">Đang tải dữ liệu từ blockchain...</td></tr>`;
-  }
-  await loadCandidates();
-  renderCandidates();
-}
-
-window.bvOpenAddCandidate = function () {
-  const titleEl = document.getElementById("candidate-modal-title");
-  if (titleEl) titleEl.textContent = "Thêm ứng viên mới";
+function bvOpenAddCandidate() {
   document.getElementById("add-candidate-form")?.reset();
   bvToggleModal("add-candidate-modal");
-};
+}
+window.bvOpenAddCandidate = bvOpenAddCandidate;
 
 async function bvSaveCandidate(event) {
   event.preventDefault();
-  const contract = getContract();
-  if (!guardAdmin() || !contract) {
-    alert("Bạn cần kết nối ví Admin để thực hiện thao tác này.");
-    return;
-  }
-  if (!currentElection) {
-    alert(
-      "Chưa có cuộc bầu cử nào được tạo. Vui lòng tạo cuộc bầu cử ở trang Quản lý bầu cử trước.",
-    );
+  if (activeElectionId === null) {
+    toast('Chưa có cuộc bầu cử nào. Hãy tạo cuộc bầu cử ở trang "Quản lý bầu cử" trước.', "error");
     return;
   }
   const name = document.getElementById("candidate-name-input").value.trim();
   const wallet = document.getElementById("candidate-wallet-input").value.trim();
   const desc = document.getElementById("candidate-desc-input").value.trim();
   if (!name || !wallet) {
-    alert("Vui lòng nhập đầy đủ Tên ứng viên và Địa chỉ ví.");
+    toast("Vui lòng nhập đầy đủ Tên ứng viên và Địa chỉ ví.", "error");
     return;
   }
   if (!/^0x[a-fA-F0-9]{40}$/.test(wallet)) {
-    alert("Địa chỉ ví không hợp lệ. Vui lòng nhập đúng định dạng 0x... (40 ký tự hex).");
+    toast("Địa chỉ ví không hợp lệ. Vui lòng nhập đúng định dạng 0x + 40 ký tự hex.", "error");
     return;
   }
-  try {
-    const tx = await contract.addCandidate(currentElection.id, name, wallet, desc);
-    await tx.wait();
-    bvToggleModal("add-candidate-modal");
-    await refreshAndRender();
-  } catch (err) {
-    console.error(err);
-    alert("Giao dịch thất bại: " + (err.reason || err.message || "Không xác định"));
-  }
+
+  const receipt = await runTx(
+    () => getContract().addCandidate(activeElectionId, name, wallet, desc),
+    {
+      pendingMsg: "Đang gửi giao dịch thêm ứng viên lên blockchain...",
+      successMsg: `Đã thêm ứng viên "${name}" thành công (đã ghi on-chain).`,
+    },
+  );
+  if (!receipt) return;
+
+  bvToggleModal("add-candidate-modal");
+  await loadCandidates();
 }
 
-window.bvVerifyCandidate = async function (id) {
-  const contract = getContract();
-  if (!guardAdmin() || !contract) return;
-  try {
-    const tx = await contract.verifyCandidate(id);
-    await tx.wait();
-    await refreshAndRender();
-  } catch (err) {
-    console.error(err);
-    alert("Giao dịch thất bại: " + (err.reason || err.message || "Không xác định"));
-  }
+window.bvVerifyCandidate = async function bvVerifyCandidate(candidateId) {
+  const receipt = await runTx(
+    () => getContract().verifyCandidate(candidateId),
+    {
+      pendingMsg: "Đang gửi giao dịch xác thực ứng viên...",
+      successMsg: "Đã xác thực ứng viên thành công (đã ghi on-chain).",
+    },
+  );
+  if (receipt) await loadCandidates();
 };
 
 function bvToggleModal(modalId) {
@@ -286,21 +284,23 @@ function bvToggleModal(modalId) {
 window.bvToggleModal = bvToggleModal;
 
 document.addEventListener("DOMContentLoaded", async () => {
-  await initAdminPage((state) => {
-    if (state.connected) refreshAndRender();
-    else renderCandidates();
-  });
+  await initAdminWallet();
+  await loadCandidates();
 
   const form = document.getElementById("add-candidate-form");
   if (form) form.addEventListener("submit", bvSaveCandidate);
   const search = document.getElementById("candidate-search");
-  if (search) search.addEventListener("input", renderCandidates);
+  if (search) search.addEventListener("input", loadCandidates);
+  const openBtn = document.getElementById("open-add-candidate-btn");
+  if (openBtn) openBtn.addEventListener("click", bvOpenAddCandidate);
 
   document.querySelectorAll("button").forEach((button) => {
     button.addEventListener("mousedown", () => button.classList.add("scale-95"));
     button.addEventListener("mouseup", () => button.classList.remove("scale-95"));
     button.addEventListener("mouseleave", () => button.classList.remove("scale-95"));
   });
+
+  window.addEventListener("bv:wallet-ready", loadCandidates);
 });
 
 window.addEventListener("click", (event) => {

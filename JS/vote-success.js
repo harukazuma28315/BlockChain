@@ -124,29 +124,76 @@ tailwind.config = {
   },
 };
 
-document.addEventListener("DOMContentLoaded", () => {
-  // Hien thi lai ten ung vien vua bo phieu (duoc luu tu trang xac nhan bo phieu),
-  // giup cu tri xac nhan dung lua chon cua minh thay vi noi dung tinh co dinh.
+// ====================== VOTE-SUCCESS.JS ======================
+// Hiển thị Transaction Hash / Block Number THẬT của giao dịch vote() vừa
+// được ký qua MetaMask (đã lưu tạm ở sessionStorage từ verify-ballot.js).
+import { getReadContract } from "./blockchain.js";
+import { shortAddr } from "./election-utils.js";
+
+document.addEventListener("DOMContentLoaded", async () => {
   const votedCandidate = sessionStorage.getItem("lastVotedCandidate");
+  const txHash = sessionStorage.getItem("lastVoteTxHash");
+  const blockNumber = sessionStorage.getItem("lastVoteBlock");
+
   const candidateNameEl = document.getElementById("votedCandidateName");
   if (votedCandidate && candidateNameEl) {
     candidateNameEl.textContent = votedCandidate;
   }
 
+  const txHashEl = document.getElementById("txHashValue");
+  if (txHash && txHashEl) {
+    txHashEl.textContent = txHash;
+    txHashEl.title = txHash;
+  }
+
+  const blockEl = document.getElementById("txBlockValue");
+  if (blockNumber && blockEl) {
+    blockEl.textContent = "#" + Number(blockNumber).toLocaleString("vi-VN");
+  }
+
+  const timeEl = document.getElementById("txTimeValue");
+  if (txHash && timeEl) {
+    try {
+      const contract = getReadContract();
+      const provider = contract.provider ?? contract.runner?.provider;
+      const receipt = await provider.getTransactionReceipt(txHash);
+      if (receipt) {
+        const block = await provider.getBlock(receipt.blockNumber);
+        if (block) {
+          timeEl.textContent = new Date(Number(block.timestamp) * 1000).toLocaleString("vi-VN");
+        }
+      }
+    } catch (e) {
+      /* giữ nguyên "Vừa xong" nếu không lấy được */
+    }
+  }
+
   // Sua loi: ban goc dung selector ":contains()" (chi co trong jQuery, khong hop le
   // trong document.querySelector()) nen doan copy hash truoc day chua bao gio chay duoc.
   const copyBtn = document.getElementById("copyHashBtn");
-  const txHashEl = document.getElementById("txHashValue");
-  if (copyBtn && txHashEl) {
+  const txHashElForCopy = document.getElementById("txHashValue");
+  if (copyBtn && txHashElForCopy) {
     copyBtn.addEventListener("click", () => {
       const icon = copyBtn.querySelector(".material-symbols-outlined");
-      navigator.clipboard.writeText(txHashEl.textContent.trim()).then(() => {
+      navigator.clipboard.writeText(txHashElForCopy.textContent.trim()).then(() => {
         icon.textContent = "check";
         setTimeout(() => {
           icon.textContent = "content_copy";
         }, 2000);
       });
     });
+  }
+
+  if (window.ethereum) {
+    try {
+      const accounts = await window.ethereum.request({ method: "eth_accounts" });
+      const headerAddr = document.querySelector("header .font-mono-label");
+      if (accounts && accounts.length > 0 && headerAddr) {
+        headerAddr.textContent = shortAddr(accounts[0]);
+      }
+    } catch (e) {
+      /* ignore */
+    }
   }
 });
 
@@ -186,7 +233,6 @@ window.addEventListener("DOMContentLoaded", () => {
   }
   animate();
 
-  // Cleanup after 3 seconds
   setTimeout(() => {
     canvas.style.transition = "opacity 1s";
     canvas.style.opacity = "0";

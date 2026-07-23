@@ -45,8 +45,10 @@
           <div
             class="w-6 h-6 rounded-full bg-gradient-to-tr from-primary to-secondary"
           ></div>
-          <span class="font-mono-label text-mono-label text-secondary"
-            >0x742d...8F44</span
+          <span
+            id="headerWalletAddress"
+            class="font-mono-label text-mono-label text-secondary"
+            >Chưa kết nối</span
           >
         </div>
       </div>
@@ -62,142 +64,17 @@
         Quay lại danh sách cuộc bầu cử
       </a>
       <header class="mb-xl">
-        <h1 class="font-headline-lg text-headline-lg text-on-surface mb-xs">
-          Bầu cử Hội đồng Quản trị DAO 2024
+        <h1 id="electionTitle" class="font-headline-lg text-headline-lg text-on-surface mb-xs">
+          Đang tải...
         </h1>
-        <p class="font-body-md text-body-md text-on-surface-variant">
-          Vui lòng chọn 01 ứng viên bạn tin tưởng nhất để đại diện cho cộng
-          đồng. Mỗi ví chỉ được bỏ phiếu 01 lần cho cuộc bầu cử này.
+        <p id="electionDesc" class="font-body-md text-body-md text-on-surface-variant">
+          Vui lòng chọn 01 ứng viên bạn tin tưởng nhất. Mỗi ví chỉ được bỏ
+          phiếu 01 lần cho cuộc bầu cử này.
         </p>
       </header>
+      <div id="votingStatusBanner" class="hidden mb-lg p-md rounded-xl border font-body-sm text-body-sm"></div>
       <!-- Grid ung vien -->
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-lg">
-        <!-- Ung vien 1 -->
-        <div
-          class="candidate-card bg-surface p-lg rounded-xl border border-outline-variant hover:shadow-lg transition-all group"
-        >
-          <div class="flex items-start justify-between mb-md">
-            <div
-              class="w-16 h-16 rounded-full bg-surface-container-high overflow-hidden border-2 border-primary"
-            >
-              <img
-                class="w-full h-full object-cover"
-                data-alt="A professional studio portrait of a confident technology leader with short hair, wearing a modern charcoal grey blazer. The background is a clean, minimalist corporate blue with soft ambient lighting, conveying trust and expertise in a high-end digital finance environment."
-                src="https://lh3.googleusercontent.com/aida-public/AB6AXuDSZX2t-xzl-r79YWmUgZowlhNJmfn0CvwrFzJM59xqeHjmwN0LE_DCVpMmgu9j7aMmGDCJ79VZAnRh2Ji2Vsn6ZokNDYxERFnyukB3KHQXdided24N1iZ6LDLOFokxSR_6V0mehzSUz05Z6lug_Nepx2YFAvsgXiqh_SBhqQUU5uv2g330rYAoIqFwS3dJP9cnHGl5qhtgN_U0-86k6_X4zkFbj6h2gna3TmooISRBv4W64ibRg3Bk4swy-1LetBUPWdvozmwgv4Y"
-              />
-            </div>
-            <span
-              class="px-sm py-xs bg-emerald-100 text-emerald-700 text-xs font-bold rounded-full flex items-center gap-1"
-            >
-              <span
-                class="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"
-              ></span>
-              Đã xác thực
-            </span>
-          </div>
-          <h4 class="font-headline-md text-headline-md text-on-surface mb-xs">
-            Nguyễn Văn A
-          </h4>
-          <p
-            class="font-body-sm text-body-sm text-on-surface-variant mb-lg line-clamp-2"
-          >
-            Chuyên gia Blockchain với hơn 10 năm kinh nghiệm trong việc xây dựng
-            các giao thức DeFi và quản trị phi tập trung.
-          </p>
-          <button
-            type="button"
-            class="select-candidate-btn w-full px-md py-sm bg-primary text-on-primary rounded-lg font-label-md text-label-md group-hover:scale-105 transition-transform"
-            data-name="Nguyễn Văn A"
-            data-role="Ứng viên Hội đồng DAO"
-            data-photo="https://lh3.googleusercontent.com/aida-public/AB6AXuDSZX2t-xzl-r79YWmUgZowlhNJmfn0CvwrFzJM59xqeHjmwN0LE_DCVpMmgu9j7aMmGDCJ79VZAnRh2Ji2Vsn6ZokNDYxERFnyukB3KHQXdided24N1iZ6LDLOFokxSR_6V0mehzSUz05Z6lug_Nepx2YFAvsgXiqh_SBhqQUU5uv2g330rYAoIqFwS3dJP9cnHGl5qhtgN_U0-86k6_X4zkFbj6h2gna3TmooISRBv4W64ibRg3Bk4swy-1LetBUPWdvozmwgv4Y"
-          >
-            Chọn ứng viên
-          </button>
-        </div>
-        <!-- Ung vien 2 -->
-        <div
-          class="candidate-card bg-surface p-lg rounded-xl border border-outline-variant hover:shadow-lg transition-all group"
-        >
-          <div class="flex items-start justify-between mb-md">
-            <div
-              class="w-16 h-16 rounded-full bg-surface-container-high overflow-hidden border-2 border-primary"
-            >
-              <img
-                class="w-full h-full object-cover"
-                data-alt="A professional portrait of Le Thu Thuy, a sophisticated Asian female professional in her 30s. She is wearing a cream-colored minimalist blouse, standing in a brightly lit modern office environment with soft focus on the background technology screens."
-                src="https://lh3.googleusercontent.com/aida-public/AB6AXuAAGRPeglVqBdpK4HEM65M78zvBFYpvWi7OmYdyAeJU_LyncnE2Hp1SFnNV4UIdM0R5uPM67ZiJYFr4eMiumeYwWWlvrvClJasIgm_Ie2smslfY1TSrS0ztShyp3whzyK6dvfQuGxst4MEgAvj3IA-Cbjj_3ow_5DbCyBg4AM9VqFbBIjTsg7CmXRo5XyulfApNUrk02QK3-R056DNDt5kfn4EZnONrRLcWMYlnTTg3n4R1ttly694vjmy7ziVjZmG_7hrJLCQtFcY"
-              />
-            </div>
-            <span
-              class="px-sm py-xs bg-emerald-100 text-emerald-700 text-xs font-bold rounded-full flex items-center gap-1"
-            >
-              <span
-                class="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"
-              ></span>
-              Đã xác thực
-            </span>
-          </div>
-          <h4 class="font-headline-md text-headline-md text-on-surface mb-xs">
-            Lê Thu Thủy
-          </h4>
-          <p
-            class="font-body-sm text-body-sm text-on-surface-variant mb-lg line-clamp-2"
-          >
-            Đóng góp quan trọng trong việc mở rộng mạng lưới đối tác chiến lược
-            tại khu vực Đông Nam Á cho các quỹ đầu tư Blockchain lớn.
-          </p>
-          <button
-            type="button"
-            class="select-candidate-btn w-full px-md py-sm bg-primary text-on-primary rounded-lg font-label-md text-label-md group-hover:scale-105 transition-transform"
-            data-name="Lê Thu Thủy"
-            data-role="Ứng viên Hội đồng DAO"
-            data-photo="https://lh3.googleusercontent.com/aida-public/AB6AXuAAGRPeglVqBdpK4HEM65M78zvBFYpvWi7OmYdyAeJU_LyncnE2Hp1SFnNV4UIdM0R5uPM67ZiJYFr4eMiumeYwWWlvrvClJasIgm_Ie2smslfY1TSrS0ztShyp3whzyK6dvfQuGxst4MEgAvj3IA-Cbjj_3ow_5DbCyBg4AM9VqFbBIjTsg7CmXRo5XyulfApNUrk02QK3-R056DNDt5kfn4EZnONrRLcWMYlnTTg3n4R1ttly694vjmy7ziVjZmG_7hrJLCQtFcY"
-          >
-            Chọn ứng viên
-          </button>
-        </div>
-        <!-- Ung vien 3 -->
-        <div
-          class="candidate-card bg-surface p-lg rounded-xl border border-outline-variant hover:shadow-lg transition-all group"
-        >
-          <div class="flex items-start justify-between mb-md">
-            <div
-              class="w-16 h-16 rounded-full bg-surface-container-high overflow-hidden border-2 border-primary"
-            >
-              <img
-                class="w-full h-full object-cover"
-                data-alt="A portrait of an experienced legal expert in the digital asset space. A woman with a confident smile, wearing an elegant cream-colored suit. The setting is a bright, modern interior with subtle bokeh effects from large windows."
-                src="https://lh3.googleusercontent.com/aida-public/AB6AXuB2LqfZzXPv2Ii0Dt8LsoGxhvOCbkywxlIThASkrzbDqUOom0KWBJoW52NIxkdk04MNwazoUDHgjKQ5XYTmqRSvgm9Xpb2llE6BvhYlTNiixOcRMBAO-9MDW6VbI3GFZT2w-Eyn0prRD9DxEGunWAkTR6ewmwmRVSG7YGvqYfyuB9powzF2w910p425mKFaF-EdNEglFPlLphr7n0zT_Ea1dzpFqledSV5zFPBPX3RrUzgic9diUMS9QR3bHN4pbo512WO2NpQGqyg"
-              />
-            </div>
-            <span
-              class="px-sm py-xs bg-emerald-100 text-emerald-700 text-xs font-bold rounded-full flex items-center gap-1"
-            >
-              <span
-                class="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"
-              ></span>
-              Đã xác thực
-            </span>
-          </div>
-          <h4 class="font-headline-md text-headline-md text-on-surface mb-xs">
-            Phạm Minh D
-          </h4>
-          <p
-            class="font-body-sm text-body-sm text-on-surface-variant mb-lg line-clamp-2"
-          >
-            Hỗ trợ pháp lý cho hàng chục dự án ICO/IEO. Chuyên gia về tuân thủ
-            quy định và khung pháp lý tài sản số tại Việt Nam.
-          </p>
-          <button
-            type="button"
-            class="select-candidate-btn w-full px-md py-sm bg-primary text-on-primary rounded-lg font-label-md text-label-md group-hover:scale-105 transition-transform"
-            data-name="Phạm Minh D"
-            data-role="Ứng viên Hội đồng DAO"
-            data-photo="https://lh3.googleusercontent.com/aida-public/AB6AXuB2LqfZzXPv2Ii0Dt8LsoGxhvOCbkywxlIThASkrzbDqUOom0KWBJoW52NIxkdk04MNwazoUDHgjKQ5XYTmqRSvgm9Xpb2llE6BvhYlTNiixOcRMBAO-9MDW6VbI3GFZT2w-Eyn0prRD9DxEGunWAkTR6ewmwmRVSG7YGvqYfyuB9powzF2w910p425mKFaF-EdNEglFPlLphr7n0zT_Ea1dzpFqledSV5zFPBPX3RrUzgic9diUMS9QR3bHN4pbo512WO2NpQGqyg"
-          >
-            Chọn ứng viên
-          </button>
-        </div>
+      <div id="candidateGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-lg">
       </div>
     </main>
     <!-- MODAL OVERLAY -->
@@ -281,8 +158,10 @@
                 <div
                   class="w-8 h-8 rounded-full bg-gradient-to-tr from-primary to-secondary"
                 ></div>
-                <span class="font-mono-label text-mono-label text-on-surface"
-                  >0x742...F44</span
+                <span
+                  id="modalWalletAddress"
+                  class="font-mono-label text-mono-label text-on-surface"
+                  >--</span
                 >
               </div>
               <span
@@ -375,6 +254,6 @@
     </aside>
     <!-- Micro-interactions Script -->
 
-    <script src="../../JS/verify-ballot.js" defer></script>
+    <script src="../../JS/verify-ballot.js" type="module" defer></script>
   </body>
 </html>

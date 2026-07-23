@@ -108,36 +108,16 @@ tailwind.config = {
   },
 };
 
-/* =========================================================================
-   TRANG LỊCH SỬ GIAO DỊCH BLOCKCHAIN — tích hợp ethers.js
-   Toàn bộ danh sách được dựng lại thật từ event log của Smart Contract
-   (không còn dữ liệu localStorage mô phỏng).
-   ========================================================================= */
-import {
-  initAdminPage,
-  getContract,
-  getProvider,
-  fetchAllTransactions,
-} from "./admin-common.js";
+// ====================== ADMIN-TRANSACTION-HISTORY.JS ======================
+// Trang Lịch sử Blockchain — đọc TOÀN BỘ event log thật từ Smart Contract
+// (không cần kết nối ví Admin, chỉ cần đọc dữ liệu công khai on-chain).
+import { getReadContract } from "./blockchain.js";
+import { initAdminWallet } from "./admin-common.js";
+import { fetchAllEvents, describeEvent, shortAddr } from "./election-utils.js";
 
-let cachedTx = [];
+let allTxs = [];
 
-function bvStatusPill(status) {
-  if (status === "success") {
-    return `<span class="inline-flex items-center gap-1 px-sm py-xs bg-emerald-100 text-emerald-700 rounded-full font-label-md text-[12px]"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-status"></span>Thành công</span>`;
-  }
-  if (status === "pending") {
-    return `<span class="inline-flex items-center gap-1 px-sm py-xs bg-amber-100 text-amber-700 rounded-full font-label-md text-[12px]"><span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-status"></span>Đang xử lý</span>`;
-  }
-  return `<span class="inline-flex items-center gap-1 px-sm py-xs bg-error-container text-on-error-container rounded-full font-label-md text-[12px]"><span class="w-1.5 h-1.5 rounded-full bg-error"></span>Thất bại</span>`;
-}
-
-function shortAddr(addr) {
-  if (!addr) return "—";
-  return addr.slice(0, 6) + "..." + addr.slice(-4);
-}
-
-function renderTransactions() {
+function renderTable() {
   const tbody = document.getElementById("tx-table-body");
   const emptyState = document.getElementById("tx-empty-state");
   if (!tbody) return;
@@ -145,7 +125,7 @@ function renderTransactions() {
   const term = (document.getElementById("tx-search")?.value || "")
     .toLowerCase()
     .trim();
-  const filtered = cachedTx.filter(
+  const filtered = allTxs.filter(
     (tx) =>
       tx.hash.toLowerCase().includes(term) ||
       (tx.wallet || "").toLowerCase().includes(term) ||
@@ -154,8 +134,7 @@ function renderTransactions() {
 
   const countEl = document.getElementById("tx-count");
   if (countEl)
-    countEl.textContent = `Hiển thị ${filtered.length} trên tổng số ${cachedTx.length} giao dịch`;
-
+    countEl.textContent = `Hiển thị ${filtered.length} trên tổng số ${allTxs.length} giao dịch`;
   if (emptyState) emptyState.classList.toggle("hidden", filtered.length > 0);
 
   tbody.innerHTML = filtered
@@ -163,51 +142,65 @@ function renderTransactions() {
       (tx) => `
     <tr class="hover:bg-surface-container-lowest transition-colors">
       <td class="px-lg py-md">
-        <p class="font-mono-label text-mono-label text-primary">${tx.hash.slice(0, 10)}...${tx.hash.slice(-6)}</p>
+        <a href="https://sepolia.etherscan.io/tx/${tx.hash}" target="_blank" rel="noopener"
+           class="font-mono-label text-mono-label text-primary hover:underline" title="${tx.hash}">
+          ${tx.hash.slice(0, 10)}...${tx.hash.slice(-6)}
+        </a>
         <p class="font-body-sm text-body-sm text-on-surface-variant">${tx.type}</p>
       </td>
-      <td class="px-lg py-md font-mono-label text-mono-label text-on-surface">${shortAddr(tx.wallet)}</td>
-      <td class="px-lg py-md font-mono-label text-mono-label text-on-surface-variant">#${tx.block.toLocaleString("vi-VN")}</td>
+      <td class="px-lg py-md font-mono-label text-mono-label">${shortAddr(tx.wallet)}</td>
+      <td class="px-lg py-md">#${tx.block}</td>
       <td class="px-lg py-md font-body-sm text-body-sm text-on-surface-variant">${tx.time}</td>
-      <td class="px-lg py-md text-center">${bvStatusPill(tx.status)}</td>
+      <td class="px-lg py-md text-center">
+        <span class="px-md py-xs bg-emerald-100 text-emerald-700 text-xs rounded-full font-bold uppercase">Thành công</span>
+      </td>
     </tr>`,
     )
     .join("");
+}
+
+async function loadHistory() {
+  const tbody = document.getElementById("tx-table-body");
+  if (tbody)
+    tbody.innerHTML = `<tr><td colspan="5" class="px-lg py-xl text-center text-on-surface-variant">Đang tải lịch sử giao dịch từ blockchain...</td></tr>`;
+
+  try {
+    const contract = getReadContract();
+    const events = await fetchAllEvents(contract, 200);
+    const provider = contract.provider ?? contract.runner?.provider;
+    allTxs = await Promise.all(events.map((ev) => describeEvent(ev, provider)));
+  } catch (err) {
+    console.error(err);
+    if (tbody)
+      tbody.innerHTML = `<tr><td colspan="5" class="px-lg py-xl text-center text-error">Không tải được lịch sử giao dịch. Kiểm tra kết nối MetaMask/mạng Sepolia.</td></tr>`;
+    return;
+  }
 
   const set = (id, val) => {
     const el = document.getElementById(id);
     if (el) el.textContent = val;
   };
-  set("tx-stat-total", cachedTx.length.toLocaleString("vi-VN"));
-  set(
-    "tx-stat-success",
-    cachedTx.filter((t) => t.status === "success").length.toLocaleString("vi-VN"),
-  );
-  set(
-    "tx-stat-block",
-    cachedTx.length ? "#" + cachedTx[0].block.toLocaleString("vi-VN") : "—",
-  );
-}
-
-async function refreshAndRender() {
-  const contract = getContract();
-  const provider = getProvider();
-  const tbody = document.getElementById("tx-table-body");
-  if (tbody) {
-    tbody.innerHTML = `<tr><td colspan="5" class="px-lg py-lg text-center text-on-surface-variant font-body-sm text-body-sm">Đang tải lịch sử giao dịch từ blockchain...</td></tr>`;
+  set("tx-stat-total", allTxs.length.toLocaleString("vi-VN"));
+  set("tx-stat-success", allTxs.length.toLocaleString("vi-VN"));
+  try {
+    const provider = getReadContract().provider ?? getReadContract().runner?.provider;
+    const blockNumber = await provider.getBlockNumber();
+    set("tx-stat-block", "#" + blockNumber.toLocaleString("vi-VN"));
+  } catch (e) {
+    /* ignore */
   }
-  cachedTx = contract && provider ? await fetchAllTransactions(contract, provider, 300) : [];
-  renderTransactions();
+
+  renderTable();
 }
 
 document.addEventListener("DOMContentLoaded", async () => {
-  await initAdminPage((state) => {
-    if (state.connected) refreshAndRender();
-    else renderTransactions();
-  });
+  await initAdminWallet();
+  await loadHistory();
 
   const search = document.getElementById("tx-search");
-  if (search) search.addEventListener("input", renderTransactions);
+  if (search) search.addEventListener("input", renderTable);
   const refreshBtn = document.getElementById("tx-refresh-btn");
-  if (refreshBtn) refreshBtn.addEventListener("click", refreshAndRender);
+  if (refreshBtn) refreshBtn.addEventListener("click", loadHistory);
+
+  window.addEventListener("bv:wallet-ready", loadHistory);
 });

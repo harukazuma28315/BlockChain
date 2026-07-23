@@ -180,8 +180,9 @@
               Quản lý cử tri
             </h1>
             <p class="font-body-md text-body-md text-on-surface-variant">
-              Thêm, xác thực và quản lý quyền bỏ phiếu của cử tri trong danh
-              sách trắng (whitelist).
+              Thêm, xác thực và khóa/mở quyền bỏ phiếu của cử tri trong danh
+              sách trắng (whitelist) trên Smart Contract. Dữ liệu on-chain là
+              vĩnh viễn nên không thể xóa cử tri khỏi danh sách.
             </p>
           </div>
           <button
@@ -329,12 +330,6 @@
       </div>
     </div>
 
-    <script
-      type="module"
-      src="../../JS/admin-voter-management.js"
-      defer
-    ></script>
-    <script type="module" src="../../JS/blockchain.js"></script>
-    <script type="module" src="../../JS/tailwind.js" defer></script>
+    <script src="../../JS/admin-voter-management.js" type="module" defer></script>
   </body>
 </html>

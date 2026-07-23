@@ -1,76 +1,62 @@
 // ====================== ADMIN-COMMON.JS ======================
-// Lớp tích hợp ethers.js dùng chung cho toàn bộ khu vực Admin.
-// Thay thế hoàn toàn lớp localStorage mô phỏng (BVStore) bằng các lời gọi
-// thật tới Smart Contract VotingSystem đã deploy (xem JS/config.js).
+// Logic dùng chung cho MỌI trang Admin: kết nối MetaMask thật qua blockchain.js,
+// hiển thị badge ví trên header, khóa/mở các nút [data-admin-only] tùy theo
+// quyền Admin thật lấy từ Smart Contract (owner()), và toast thông báo.
 import {
   connectWallet,
-  disconnectWallet,
   getContract,
-  getProvider,
-  getCurrentAddress,
-  isAdmin,
   addAccountChangeListener,
 } from "./blockchain.js";
+import { shortAddr } from "./election-utils.js";
 
-// ============================ Tiện ích chung ============================
-export function shortAddr(addr) {
-  if (!addr) return "";
-  return addr.slice(0, 6) + "..." + addr.slice(-4);
+let currentState = { address: null, isAdmin: false, contract: null, signer: null };
+
+export function getState() {
+  return currentState;
 }
 
-export function nowLabel() {
-  return new Date().toLocaleString("vi-VN");
+export function getAdminContract() {
+  return currentState.contract || getContract();
 }
 
-// draft = Pending(0), registration = 1, verification = 2, voting = 3, ended = 4
-export const STATUS_KEYS = [
-  "draft",
-  "registration",
-  "verification",
-  "voting",
-  "ended",
-];
-
-export function statusKeyFromEnum(statusValue) {
-  const idx = Number(statusValue);
-  return STATUS_KEYS[idx] || "draft";
-}
-
-export function statusLabel(key) {
-  return (
-    {
-      draft: "Chưa khởi tạo",
-      registration: "Đang mở đăng ký",
-      verification: "Đang xác thực",
-      voting: "Đang bỏ phiếu",
-      ended: "Đã kết thúc",
-    }[key] || key
+/* ============================ TOAST ============================ */
+export function toast(message, type = "info") {
+  let el = document.getElementById("bv-toast-el");
+  if (!el) {
+    el = document.createElement("div");
+    el.id = "bv-toast-el";
+    document.body.appendChild(el);
+  }
+  const styles = {
+    info: "bg-surface-container-high text-on-surface border-outline-variant",
+    error: "bg-red-50 text-red-700 border-red-200",
+    success: "bg-emerald-50 text-emerald-700 border-emerald-200",
+  };
+  el.className = `fixed bottom-6 right-6 z-[200] max-w-sm px-4 py-3 rounded-xl shadow-lg text-sm font-medium border transition-all duration-300 opacity-0 translate-y-2 ${styles[type] || styles.info}`;
+  el.textContent = message;
+  requestAnimationFrame(() =>
+    el.classList.remove("opacity-0", "translate-y-2"),
   );
+  clearTimeout(el._t);
+  el._t = setTimeout(() => el.classList.add("opacity-0", "translate-y-2"), 4000);
 }
 
-// ============================ Trạng thái trang ============================
-const state = {
-  address: null,
-  connected: false,
-  isAdmin: false,
-};
-
-function renderWallet() {
+/* ============================ WALLET BADGE ============================ */
+export function renderWalletBadge() {
+  const { address, isAdmin: admin } = currentState;
   const addrEl = document.getElementById("wallet-address");
   const statusEl = document.getElementById("wallet-status");
   const badgeEl = document.getElementById("wallet-badge");
   const connectBtn = document.getElementById("connect-wallet-btn");
-  const dotHeader = document.getElementById("system-status-dot-header");
+  const dot = document.getElementById("system-status-dot-header");
 
-  if (addrEl) {
-    addrEl.textContent = state.connected ? shortAddr(state.address) : "Chưa kết nối";
-    addrEl.classList.remove("hidden");
-  }
+  if (addrEl)
+    addrEl.textContent = address ? shortAddr(address) : "Chưa kết nối";
   if (statusEl) {
-    if (state.connected && state.isAdmin) {
+    if (address && admin) {
       statusEl.textContent = "Connected (Admin)";
       statusEl.className = "text-[11px] text-emerald-600 font-medium";
-    } else if (state.connected && !state.isAdmin) {
+    } else if (address && !admin) {
       statusEl.textContent = "Ví không có quyền Admin";
       statusEl.className = "text-[11px] text-error font-medium";
     } else {
@@ -78,22 +64,17 @@ function renderWallet() {
       statusEl.className = "text-[11px] text-on-surface-variant font-medium";
     }
   }
-  if (badgeEl) badgeEl.classList.toggle("opacity-50", !state.connected);
-  if (dotHeader) {
-    dotHeader.className = `w-2 h-2 rounded-full ${
-      state.connected && state.isAdmin ? "bg-emerald-500" : "bg-outline"
-    }`;
-  }
-  if (connectBtn) {
-    connectBtn.textContent = state.connected
-      ? shortAddr(state.address)
-      : "Kết nối ví Admin";
-  }
+  if (badgeEl) badgeEl.classList.toggle("opacity-50", !address);
+  if (connectBtn)
+    connectBtn.textContent = address ? shortAddr(address) : "Kết nối ví Admin";
+  if (dot)
+    dot.className = `w-2 h-2 rounded-full ${address && admin ? "bg-emerald-500" : "bg-outline"}`;
 }
 
+/** Khóa các nút [data-admin-only] nếu ví chưa kết nối hoặc không phải Admin thật (owner() trên contract). */
 export function guardAdmin() {
+  const isOk = !!currentState.address && currentState.isAdmin;
   const warningEl = document.getElementById("admin-guard-warning");
-  const isOk = state.connected && state.isAdmin;
   if (warningEl) warningEl.classList.toggle("hidden", isOk);
   document.querySelectorAll("[data-admin-only]").forEach((el) => {
     el.disabled = !isOk;
@@ -103,218 +84,82 @@ export function guardAdmin() {
   return isOk;
 }
 
-export function getState() {
-  return state;
+async function handleConnectClick() {
+  const data = await connectWallet();
+  if (!data) return;
+  currentState = data;
+  renderWalletBadge();
+  guardAdmin();
+  toast(
+    data.isAdmin
+      ? "Đã kết nối ví Admin thành công."
+      : "Ví này không có quyền Admin trên Smart Contract (không phải owner()).",
+    data.isAdmin ? "success" : "error",
+  );
+  window.dispatchEvent(new CustomEvent("bv:wallet-ready", { detail: currentState }));
 }
 
 /**
- * Khởi tạo trang Admin: cố gắng khôi phục phiên kết nối MetaMask (nếu đã từng
- * cấp quyền), gắn sự kiện cho nút "Kết nối ví Admin", theo dõi accountsChanged
- * và gọi lại onChange(state) mỗi khi trạng thái thay đổi để trang tự render.
+ * Khởi tạo badge ví + guard cho 1 trang Admin. Gọi 1 lần khi DOMContentLoaded.
+ * Trả về Promise<state>. state.contract === null nếu ví chưa kết nối.
  */
-export async function initAdminPage(onChange) {
-  const connectBtn = document.getElementById("connect-wallet-btn");
+export function initAdminWallet() {
+  return new Promise((resolve) => {
+    const connectBtn = document.getElementById("connect-wallet-btn");
+    if (connectBtn) connectBtn.addEventListener("click", handleConnectClick);
 
-  function applyResult(data) {
-    if (data) {
-      state.address = data.address;
-      state.connected = true;
-      state.isAdmin = data.isAdmin;
-    } else {
-      state.address = null;
-      state.connected = false;
-      state.isAdmin = false;
-    }
-    renderWallet();
-    guardAdmin();
-    if (onChange) onChange(state);
-  }
-
-  async function handleConnectClick() {
-    const data = await connectWallet();
-    if (!data) return;
-    applyResult(data);
-  }
-
-  if (connectBtn) connectBtn.addEventListener("click", handleConnectClick);
-
-  // Khôi phục phiên kết nối nếu MetaMask đã từng cấp quyền cho trang này
-  if (window.ethereum) {
-    try {
-      const accounts = await window.ethereum.request({ method: "eth_accounts" });
-      if (accounts && accounts.length > 0) {
-        const data = await connectWallet();
-        applyResult(data);
-      } else {
-        applyResult(null);
+    (async () => {
+      if (window.ethereum) {
+        try {
+          const accounts = await window.ethereum.request({
+            method: "eth_accounts",
+          });
+          if (accounts && accounts.length > 0) {
+            const data = await connectWallet();
+            if (data) currentState = data;
+          }
+        } catch (e) {
+          console.error("Không thể tự động kết nối ví:", e);
+        }
       }
-    } catch (e) {
-      console.error(e);
-      applyResult(null);
-    }
-  } else {
-    applyResult(null);
-  }
+      renderWalletBadge();
+      guardAdmin();
+      resolve(currentState);
+    })();
 
-  addAccountChangeListener((data) => applyResult(data));
-
-  return state;
-}
-
-export { getContract, getProvider, getCurrentAddress, isAdmin, disconnectWallet };
-
-// ============================ Đọc dữ liệu từ Contract ============================
-export async function fetchVoters(contract) {
-  const addrs = await contract.getAllVoters();
-  const list = await Promise.all(
-    addrs.map(async (addr) => {
-      const v = await contract.getVoter(addr);
-      return {
-        address: v.wallet,
-        name: v.fullName,
-        verified: v.verified,
-        active: v.active,
+    addAccountChangeListener((data) => {
+      currentState = data || {
+        address: null,
+        isAdmin: false,
+        contract: null,
+        signer: null,
       };
-    }),
-  );
-  return list;
-}
-
-export async function fetchCandidates(contract) {
-  const all = await contract.getAllCandidates();
-  return all.map((c) => ({
-    id: Number(c.id),
-    name: c.fullName,
-    wallet: c.wallet,
-    desc: c.description,
-    votes: Number(c.voteCount),
-    verified: c.verified,
-  }));
-}
-
-export async function fetchElections(contract) {
-  const all = await contract.getAllElections();
-  return all.map((e) => ({
-    id: Number(e.id),
-    title: e.title,
-    description: e.description,
-    status: statusKeyFromEnum(e.status),
-    startTime: Number(e.startTime),
-    endTime: Number(e.endTime),
-  }));
-}
-
-/** Trả về cuộc bầu cử mới nhất (được xem là cuộc bầu cử "hiện hành" của demo). */
-export async function fetchCurrentElection(contract) {
-  const count = await contract.electionCount();
-  if (count === 0n) return null;
-  const id = count - 1n;
-  const e = await contract.getElection(id);
-  return {
-    id: Number(e.id),
-    title: e.title,
-    description: e.description,
-    status: statusKeyFromEnum(e.status),
-    startTime: Number(e.startTime),
-    endTime: Number(e.endTime),
-  };
-}
-
-// ============================ Lịch sử giao dịch (từ Event Log) ============================
-const EVENT_DEFS = [
-  {
-    name: "ElectionCreated",
-    label: (a) => `Tạo cuộc bầu cử: ${a.title}`,
-  },
-  {
-    name: "ElectionStatusChanged",
-    label: (a) => `Chuyển trạng thái bầu cử #${a.electionId}: ${statusLabel(statusKeyFromEnum(a.status))}`,
-  },
-  {
-    name: "VoterRegistered",
-    label: (a) => `Thêm cử tri: ${a.fullName}`,
-  },
-  {
-    name: "VoterVerified",
-    label: (a) => `Xác thực cử tri: ${shortAddr(a.wallet)}`,
-  },
-  {
-    name: "VoterDisabled",
-    label: (a) => `Khóa quyền bỏ phiếu: ${shortAddr(a.wallet)}`,
-  },
-  {
-    name: "VoterEnabled",
-    label: (a) => `Mở quyền bỏ phiếu: ${shortAddr(a.wallet)}`,
-  },
-  {
-    name: "CandidateAdded",
-    label: (a) => `Thêm ứng viên: ${a.fullName}`,
-  },
-  {
-    name: "CandidateVerified",
-    label: (a) => `Xác thực ứng viên #${a.candidateId}`,
-  },
-  {
-    name: "VoteCast",
-    label: (a) => `Cử tri bỏ phiếu (cuộc bầu cử #${a.electionId})`,
-  },
-  {
-    name: "OwnershipTransferred",
-    label: () => `Chuyển quyền sở hữu hợp đồng`,
-  },
-];
-
-/**
- * Xây dựng danh sách giao dịch on-chain (thật) bằng cách đọc toàn bộ event log
- * đã phát ra từ Smart Contract, sắp xếp theo block giảm dần (mới nhất trước).
- */
-export async function fetchAllTransactions(contract, provider, limit = 200) {
-  const logsPerEvent = await Promise.all(
-    EVENT_DEFS.map(async (def) => {
-      try {
-        const filter = contract.filters[def.name]();
-        const logs = await contract.queryFilter(filter, 0, "latest");
-        return logs.map((log) => ({ log, def }));
-      } catch (e) {
-        console.warn("Không đọc được event", def.name, e);
-        return [];
-      }
-    }),
-  );
-
-  let entries = logsPerEvent.flat();
-  entries.sort((a, b) => {
-    if (b.log.blockNumber !== a.log.blockNumber)
-      return b.log.blockNumber - a.log.blockNumber;
-    return b.log.index - a.log.index;
+      renderWalletBadge();
+      guardAdmin();
+      window.dispatchEvent(
+        new CustomEvent("bv:wallet-ready", { detail: currentState }),
+      );
+    });
   });
-  entries = entries.slice(0, limit);
+}
 
-  const blockCache = new Map();
-  const txCache = new Map();
-
-  const results = await Promise.all(
-    entries.map(async ({ log, def }) => {
-      let block = blockCache.get(log.blockNumber);
-      if (!block) {
-        block = await provider.getBlock(log.blockNumber);
-        blockCache.set(log.blockNumber, block);
-      }
-      let tx = txCache.get(log.transactionHash);
-      if (!tx) {
-        tx = await provider.getTransaction(log.transactionHash);
-        txCache.set(log.transactionHash, tx);
-      }
-      return {
-        hash: log.transactionHash,
-        wallet: tx ? tx.from : null,
-        block: log.blockNumber,
-        time: block ? new Date(block.timestamp * 1000).toLocaleString("vi-VN") : "",
-        status: "success",
-        type: def.label(log.args),
-      };
-    }),
-  );
-
-  return results;
+/** Bọc 1 thao tác ghi (write) vào contract: kiểm tra quyền, gửi tx, chờ mined, báo lỗi rõ ràng. */
+export async function runTx(txPromiseFactory, { pendingMsg, successMsg } = {}) {
+  if (!guardAdmin()) {
+    toast("Bạn cần kết nối ví Admin (owner của contract) để thực hiện thao tác này.", "error");
+    return null;
+  }
+  try {
+    if (pendingMsg) toast(pendingMsg, "info");
+    const tx = await txPromiseFactory();
+    const receipt = await tx.wait();
+    if (successMsg) toast(successMsg, "success");
+    return receipt;
+  } catch (err) {
+    console.error(err);
+    const reason =
+      err?.reason || err?.shortMessage || err?.message || "Giao dịch thất bại.";
+    toast(`Lỗi: ${reason}`, "error");
+    return null;
+  }
 }

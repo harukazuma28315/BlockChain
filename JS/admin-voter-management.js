@@ -108,47 +108,51 @@ tailwind.config = {
   },
 };
 
-/* =========================================================================
-   TRANG QUẢN LÝ CỬ TRI — tích hợp ethers.js
-   Thêm cử tri (registerVoter), Xác thực (verifyVoter), Khóa/Mở quyền bỏ
-   phiếu (disableVoter/enableVoter). Dữ liệu đọc trực tiếp từ Smart Contract.
-   ========================================================================= */
-import {
-  initAdminPage,
-  getContract,
-  guardAdmin,
-  shortAddr,
-  fetchVoters,
-} from "./admin-common.js";
-
-let cachedVoters = [];
+// ====================== ADMIN-VOTER-MANAGEMENT.JS ======================
+// Trang Quản lý cử tri — tích hợp THẬT với Smart Contract qua ethers.js.
+// Chức năng khớp với contract:
+//   - Thêm cử tri (whitelist): contract.registerVoter(name, wallet)
+//   - Xác thực cử tri: contract.verifyVoter(wallet)
+//   - Khóa / Mở quyền bỏ phiếu: contract.disableVoter(wallet) / enableVoter(wallet)
+// Lưu ý: Smart Contract KHÔNG hỗ trợ xóa cử tri khỏi whitelist (dữ liệu
+// on-chain là vĩnh viễn), nên nút "Xóa" của bản demo cũ đã được bỏ, thay
+// bằng "Khóa quyền bỏ phiếu" (vẫn đạt mục đích ngăn cử tri đó bỏ phiếu).
+import { getContract } from "./blockchain.js";
+import { initAdminWallet, guardAdmin, toast, runTx } from "./admin-common.js";
+import { getAllVotersPlain, shortAddr } from "./election-utils.js";
 
 async function loadVoters() {
   const contract = getContract();
-  if (!contract) {
-    cachedVoters = [];
-    return;
-  }
-  cachedVoters = await fetchVoters(contract);
-}
-
-function renderVoters() {
   const tbody = document.getElementById("voters-table-body");
   const emptyState = document.getElementById("voters-empty-state");
   if (!tbody) return;
 
+  if (!contract) {
+    tbody.innerHTML = `<tr><td colspan="4" class="px-lg py-xl text-center text-on-surface-variant">Kết nối ví để tải dữ liệu từ Smart Contract...</td></tr>`;
+    return;
+  }
+
+  let voters;
+  try {
+    voters = await getAllVotersPlain(contract);
+  } catch (err) {
+    console.error(err);
+    toast("Không tải được danh sách cử tri từ Smart Contract.", "error");
+    return;
+  }
+
   const term = (document.getElementById("voter-search")?.value || "")
     .toLowerCase()
     .trim();
-  const filtered = cachedVoters.filter(
+  const filtered = voters.filter(
     (v) =>
-      v.name.toLowerCase().includes(term) ||
-      v.address.toLowerCase().includes(term),
+      v.fullName.toLowerCase().includes(term) ||
+      v.wallet.toLowerCase().includes(term),
   );
 
   const countEl = document.getElementById("voters-count");
   if (countEl)
-    countEl.textContent = `Hiển thị ${filtered.length} trên tổng số ${cachedVoters.length} cử tri`;
+    countEl.textContent = `Hiển thị ${filtered.length} trên tổng số ${voters.length} cử tri`;
 
   if (emptyState) emptyState.classList.toggle("hidden", filtered.length > 0);
 
@@ -162,8 +166,8 @@ function renderVoters() {
             <span class="material-symbols-outlined text-[18px]">person</span>
           </div>
           <div>
-            <p class="font-label-md text-label-md text-on-surface">${v.name}</p>
-            <p class="font-mono-label text-mono-label text-on-surface-variant">${shortAddr(v.address)}</p>
+            <p class="font-label-md text-label-md text-on-surface">${v.fullName}</p>
+            <p class="font-mono-label text-mono-label text-on-surface-variant">${shortAddr(v.wallet)}</p>
           </div>
         </div>
       </td>
@@ -183,15 +187,15 @@ function renderVoters() {
       </td>
       <td class="px-lg py-md text-right">
         <div class="flex items-center justify-end gap-sm">
-          <button data-admin-only ${v.verified ? "disabled" : ""} onclick="bvVerifyVoter('${v.address}')"
+          <button data-admin-only ${v.verified ? "disabled" : ""} onclick="bvVerifyVoter('${v.wallet}')"
             class="p-sm text-on-surface-variant hover:text-primary hover:bg-primary-fixed rounded-lg transition-all disabled:opacity-30 disabled:cursor-not-allowed"
-            title="Xác thực cử tri">
+            title="Xác thực cử tri (ghi on-chain)">
             <span class="material-symbols-outlined">how_to_reg</span>
           </button>
-          <button data-admin-only onclick="bvToggleLockVoter('${v.address}', ${v.active})"
+          <button data-admin-only onclick="bvToggleLockVoter('${v.wallet}', ${v.active})"
             class="p-sm text-on-surface-variant hover:text-amber-600 hover:bg-amber-100/50 rounded-lg transition-all"
-            title="${v.active ? "Khóa quyền bỏ phiếu" : "Mở quyền bỏ phiếu"}">
-            <span class="material-symbols-outlined">${v.active ? "lock" : "lock_open"}</span>
+            title="${v.active ? "Khóa quyền bỏ phiếu" : "Mở quyền bỏ phiếu"} (ghi on-chain)">
+            <span class="material-symbols-outlined">${v.active ? "lock_open" : "lock"}</span>
           </button>
         </div>
       </td>
@@ -202,74 +206,54 @@ function renderVoters() {
   guardAdmin();
 }
 
-async function refreshAndRender() {
-  const tbody = document.getElementById("voters-table-body");
-  if (tbody) {
-    tbody.innerHTML = `<tr><td colspan="4" class="px-lg py-lg text-center text-on-surface-variant font-body-sm text-body-sm">Đang tải dữ liệu từ blockchain...</td></tr>`;
-  }
-  await loadVoters();
-  renderVoters();
-}
-
 async function bvAddVoter(event) {
   event.preventDefault();
-  const contract = getContract();
-  if (!guardAdmin() || !contract) {
-    alert("Bạn cần kết nối ví Admin để thực hiện thao tác này.");
-    return;
-  }
   const name = document.getElementById("voter-name-input").value.trim();
   const address = document.getElementById("voter-address-input").value.trim();
   if (!name || !address) {
-    alert("Vui lòng nhập đầy đủ Họ tên và Địa chỉ ví.");
+    toast("Vui lòng nhập đầy đủ Họ tên và Địa chỉ ví.", "error");
     return;
   }
   if (!/^0x[a-fA-F0-9]{40}$/.test(address)) {
-    alert("Địa chỉ ví không hợp lệ. Vui lòng nhập đúng định dạng 0x... (40 ký tự hex).");
+    toast("Địa chỉ ví không hợp lệ. Vui lòng nhập đúng định dạng 0x + 40 ký tự hex.", "error");
     return;
   }
-  if (cachedVoters.some((v) => v.address.toLowerCase() === address.toLowerCase())) {
-    alert("Địa chỉ ví này đã có trong danh sách cử tri.");
-    return;
-  }
-  try {
-    const tx = await contract.registerVoter(name, address);
-    await tx.wait();
-    bvToggleModal("add-voter-modal");
-    document.getElementById("add-voter-form").reset();
-    await refreshAndRender();
-  } catch (err) {
-    console.error(err);
-    alert("Giao dịch thất bại: " + (err.reason || err.message || "Không xác định"));
-  }
+
+  const receipt = await runTx(
+    () => getContract().registerVoter(name, address),
+    {
+      pendingMsg: "Đang gửi giao dịch thêm cử tri lên blockchain...",
+      successMsg: `Đã thêm cử tri "${name}" thành công (đã ghi on-chain).`,
+    },
+  );
+  if (!receipt) return;
+
+  bvToggleModal("add-voter-modal");
+  document.getElementById("add-voter-form")?.reset();
+  await loadVoters();
 }
 
-window.bvVerifyVoter = async function (address) {
-  const contract = getContract();
-  if (!guardAdmin() || !contract) return;
-  try {
-    const tx = await contract.verifyVoter(address);
-    await tx.wait();
-    await refreshAndRender();
-  } catch (err) {
-    console.error(err);
-    alert("Giao dịch thất bại: " + (err.reason || err.message || "Không xác định"));
-  }
+window.bvVerifyVoter = async function bvVerifyVoter(wallet) {
+  const receipt = await runTx(() => getContract().verifyVoter(wallet), {
+    pendingMsg: "Đang gửi giao dịch xác thực cử tri...",
+    successMsg: "Đã xác thực cử tri thành công (đã ghi on-chain).",
+  });
+  if (receipt) await loadVoters();
 };
 
-window.bvToggleLockVoter = async function (address, currentlyActive) {
-  const contract = getContract();
-  if (!guardAdmin() || !contract) return;
-  try {
-    const tx = currentlyActive
-      ? await contract.disableVoter(address)
-      : await contract.enableVoter(address);
-    await tx.wait();
-    await refreshAndRender();
-  } catch (err) {
-    console.error(err);
-    alert("Giao dịch thất bại: " + (err.reason || err.message || "Không xác định"));
-  }
+window.bvToggleLockVoter = async function bvToggleLockVoter(wallet, isActive) {
+  const call = isActive
+    ? () => getContract().disableVoter(wallet)
+    : () => getContract().enableVoter(wallet);
+  const receipt = await runTx(call, {
+    pendingMsg: isActive
+      ? "Đang khóa quyền bỏ phiếu của cử tri..."
+      : "Đang mở lại quyền bỏ phiếu của cử tri...",
+    successMsg: isActive
+      ? "Đã khóa quyền bỏ phiếu (đã ghi on-chain)."
+      : "Đã mở lại quyền bỏ phiếu (đã ghi on-chain).",
+  });
+  if (receipt) await loadVoters();
 };
 
 function bvToggleModal(modalId) {
@@ -293,15 +277,15 @@ function bvToggleModal(modalId) {
 window.bvToggleModal = bvToggleModal;
 
 document.addEventListener("DOMContentLoaded", async () => {
-  await initAdminPage((state) => {
-    if (state.connected) refreshAndRender();
-    else renderVoters();
-  });
+  await initAdminWallet();
+  await loadVoters();
 
   const form = document.getElementById("add-voter-form");
   if (form) form.addEventListener("submit", bvAddVoter);
   const search = document.getElementById("voter-search");
-  if (search) search.addEventListener("input", renderVoters);
+  if (search) search.addEventListener("input", loadVoters);
+
+  window.addEventListener("bv:wallet-ready", loadVoters);
 });
 
 window.addEventListener("click", (event) => {

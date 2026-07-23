@@ -344,30 +344,13 @@
                   rows="4"
                 ></textarea>
               </div>
-              <div class="grid grid-cols-2 gap-md">
-                <div>
-                  <label
-                    class="block font-label-md text-label-md text-on-surface-variant mb-xs"
-                    >Ngày bắt đầu</label
-                  >
-                  <input
-                    id="election-start-input"
-                    class="w-full px-md py-sm rounded-xl border border-outline outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
-                    type="date"
-                  />
-                </div>
-                <div>
-                  <label
-                    class="block font-label-md text-label-md text-on-surface-variant mb-xs"
-                    >Ngày kết thúc</label
-                  >
-                  <input
-                    id="election-end-input"
-                    class="w-full px-md py-sm rounded-xl border border-outline outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
-                    type="date"
-                  />
-                </div>
-              </div>
+              <p
+                class="font-body-sm text-body-sm text-on-surface-variant bg-surface-container-low border border-outline-variant rounded-xl px-md py-sm"
+              >
+                Thời gian bắt đầu/kết thúc do Smart Contract tự động ghi nhận
+                (block timestamp) khi bạn chuyển trạng thái sang "Mở bỏ phiếu"
+                và "Kết thúc bỏ phiếu" ở trang Điều khiển.
+              </p>
               <div class="pt-md flex gap-md">
                 <button
                   class="flex-1 py-sm px-md border border-outline text-on-surface rounded-xl font-label-md hover:bg-surface-container-high transition-colors"
@@ -389,8 +372,10 @@
       </div>
     </div>
 
-    <script type="module" src="../../JS/admin-ballot-management.js"></script>
-    <script type="module" src="../../JS/blockchain.js"></script>
-    <script type="module" src="../../JS/tailwind.js" defer></script>
+    <script
+      src="../../JS/admin-ballot-management.js"
+      type="module"
+      defer
+    ></script>
   </body>
 </html>
