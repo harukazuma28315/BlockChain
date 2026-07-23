@@ -144,17 +144,45 @@ const EVENT_LABELS = {
 
 /** Gom toàn bộ event của contract thành 1 danh sách, mới nhất trước. */
 export async function fetchAllEvents(contract, limit = 200) {
-  const arrays = await Promise.all(
-    EVENT_NAMES.map((name) =>
-      contract.queryFilter(contract.filters[name]()).catch(() => []),
-    ),
-  );
-  let events = arrays.flat();
-  events.sort(
+  const provider = contract.runner?.provider || contract.provider;
+
+  const latestBlock = await provider.getBlockNumber();
+
+  // Đặt block deploy của VotingSystem tại đây
+  const DEPLOY_BLOCK = 11320000;
+
+  const CHUNK_SIZE = 9000;
+  const allEvents = [];
+
+  for (
+    let fromBlock = DEPLOY_BLOCK;
+    fromBlock <= latestBlock;
+    fromBlock += CHUNK_SIZE
+  ) {
+    const toBlock = Math.min(fromBlock + CHUNK_SIZE - 1, latestBlock);
+
+    const results = await Promise.all(
+      EVENT_NAMES.map(async (name) => {
+        try {
+          const filter = contract.filters[name]();
+
+          return await contract.queryFilter(filter, fromBlock, toBlock);
+        } catch (error) {
+          console.error(`[ERROR] ${name}:`, error);
+
+          return [];
+        }
+      }),
+    );
+
+    allEvents.push(...results.flat());
+  }
+
+  allEvents.sort(
     (a, b) => b.blockNumber - a.blockNumber || (b.index ?? 0) - (a.index ?? 0),
   );
-  if (limit) events = events.slice(0, limit);
-  return events;
+
+  return limit ? allEvents.slice(0, limit) : allEvents;
 }
 
 /** Chuyển 1 event log thành bản ghi giao dịch dễ hiển thị (có gọi thêm RPC để lấy wallet + thời gian). */
@@ -184,4 +212,31 @@ export async function describeEvent(ev, provider) {
     time,
     status: "success",
   };
+}
+export async function fetchVoteEvents(contract, fromBlock = null) {
+  const provider = contract.runner?.provider || contract.provider;
+
+  const latestBlock = await provider.getBlockNumber();
+
+  const CHUNK_SIZE = 9000;
+
+  if (fromBlock === null) {
+    fromBlock = latestBlock - CHUNK_SIZE;
+  }
+
+  const allEvents = [];
+
+  for (let start = fromBlock; start <= latestBlock; start += CHUNK_SIZE) {
+    const end = Math.min(start + CHUNK_SIZE - 1, latestBlock);
+
+    const events = await contract.queryFilter(
+      contract.filters.VoteCast(),
+      start,
+      end,
+    );
+
+    allEvents.push(...events);
+  }
+
+  return allEvents;
 }

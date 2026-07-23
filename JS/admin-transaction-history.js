@@ -166,7 +166,7 @@ async function loadHistory() {
 
   try {
     const contract = getReadContract();
-    const events = await fetchAllEvents(contract, 200);
+    const events = await fetchAllEvents(contract, 0);
     const provider = contract.provider ?? contract.runner?.provider;
     allTxs = await Promise.all(events.map((ev) => describeEvent(ev, provider)));
   } catch (err) {
